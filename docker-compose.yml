@@ -1,0 +1,14 @@
+version: '3.8'
+
+services:
+  nginx-proxy:
+    build: .
+    ports:
+      - "80:80"
+    networks:
+      - default
+    restart: unless-stopped
+
+networks:
+  default:
+    driver: bridge
