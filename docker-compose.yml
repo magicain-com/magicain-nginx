@@ -1,14 +1,186 @@
 version: '3.8'
 
 services:
+  # Nginx Reverse Proxy
   nginx-proxy:
     build: .
     ports:
       - "80:80"
+    depends_on:
+      - backend
+      - langfuse
     networks:
-      - default
+      - magicain-network
+    restart: unless-stopped
+    volumes:
+      - ./logs/nginx:/var/log/nginx
+
+  # Backend Java Application
+  backend:
+    image: openjdk:17-jdk-slim
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/magicain
+      - SPRING_DATASOURCE_USERNAME=magicain
+      - SPRING_DATASOURCE_PASSWORD=magicain123
+      - SPRING_REDIS_HOST=redis
+      - SPRING_REDIS_PORT=6379
+      - ELASTICSEARCH_HOST=elasticsearch
+      - ELASTICSEARCH_PORT=9200
+      - LANGFUSE_HOST=langfuse
+      - LANGFUSE_PORT=3000
+    depends_on:
+      - postgres
+      - redis
+      - elasticsearch
+    networks:
+      - magicain-network
+    restart: unless-stopped
+    volumes:
+      - ./backend:/app
+      - /tmp:/tmp
+    working_dir: /app
+    command: ["./gradlew", "bootRun"]
+
+  # PostgreSQL with PgVector
+  postgres:
+    image: pgvector/pgvector:pg15
+    environment:
+      - POSTGRES_DB=magicain
+      - POSTGRES_USER=magicain
+      - POSTGRES_PASSWORD=magicain123
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - magicain-network
     restart: unless-stopped
 
+  # Redis
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - magicain-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # Elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+      - xpack.security.enabled=false
+      - xpack.security.enrollment.enabled=false
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    networks:
+      - magicain-network
+    restart: unless-stopped
+
+  # Langfuse - AI Agent Monitoring
+  langfuse:
+    image: langfuse/langfuse:latest
+    environment:
+      - DATABASE_URL=postgresql://langfuse:langfuse123@postgres-langfuse:5432/langfuse
+      - NEXTAUTH_SECRET=your-secret-key-here
+      - NEXTAUTH_URL=http://localhost/langfuse
+      - TELEMETRY_ENABLED=false
+    ports:
+      - "3000:3000"
+    depends_on:
+      - postgres-langfuse
+    networks:
+      - magicain-network
+    restart: unless-stopped
+
+  # Separate PostgreSQL for Langfuse
+  postgres-langfuse:
+    image: postgres:15
+    environment:
+      - POSTGRES_DB=langfuse
+      - POSTGRES_USER=langfuse
+      - POSTGRES_PASSWORD=langfuse123
+    volumes:
+      - postgres_langfuse_data:/var/lib/postgresql/data
+    networks:
+      - magicain-network
+    restart: unless-stopped
+
+  # Prometheus - Metrics Collection
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=200h'
+      - '--web.enable-lifecycle'
+    networks:
+      - magicain-network
+    restart: unless-stopped
+
+  # Grafana - Metrics Visualization
+  grafana:
+    image: grafana/grafana:latest
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - magicain-network
+    restart: unless-stopped
+
+  # Node Exporter - System Metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - magicain-network
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  postgres_langfuse_data:
+  redis_data:
+  es_data:
+  prometheus_data:
+  grafana_data:
+
 networks:
-  default:
+  magicain-network:
     driver: bridge
