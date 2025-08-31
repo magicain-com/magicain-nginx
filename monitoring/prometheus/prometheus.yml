@@ -45,6 +45,13 @@ scrape_configs:
     static_configs:
       - targets: ['elasticsearch-exporter:9114']
 
+  # ClickHouse metrics
+  - job_name: 'clickhouse'
+    static_configs:
+      - targets: ['clickhouse:8123']
+    metrics_path: /metrics
+    scrape_interval: 30s
+
   # Langfuse metrics (if available)
   - job_name: 'langfuse'
     static_configs:

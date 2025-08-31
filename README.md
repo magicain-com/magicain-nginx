@@ -29,9 +29,24 @@ This project provides a complete development and production environment includin
    cd magicain-nginx
    ```
 
-2. **Start core infrastructure services:**
+2. **Set up environment variables (optional for development):**
    ```bash
-   docker-compose up -d postgres redis elasticsearch langfuse prometheus grafana
+   cp .env.example .env
+   # Edit .env with your Docker registry credentials if using private images
+   ```
+
+3. **Start all services (recommended method):**
+   ```bash
+   ./scripts/start-dev.sh
+   ```
+   
+   **Or manually:**
+   ```bash
+   # Login to Docker registry (if needed)
+   ./scripts/docker-login.sh
+   
+   # Start services
+   docker-compose up -d
    ```
 
 3. **Wait for services to initialize (check logs):**
@@ -40,26 +55,50 @@ This project provides a complete development and production environment includin
    # Wait for "database system is ready to accept connections"
    ```
 
-4. **Start your development servers:**
+4. **Start your development servers (optional - for external development):**
    - Admin frontend on port 8080 with base path `/admin`
    - Agent frontend on port 8081 with base path `/agent`  
    - Chat frontend on port 8082 with base path `/chat`
    - Java backend on port 8080 (or use the containerized version)
 
-5. **Start the nginx proxy:**
-   ```bash
-   docker-compose up -d nginx-proxy
-   ```
-
-6. **Access your applications:**
+5. **Access your applications:**
    - **Admin:** http://localhost/admin/
    - **Agent:** http://localhost/agent/
    - **Chat:** http://localhost/chat/
+   - **Agent UI:** http://localhost:8001/ (containerized frontend)
    - **Admin API:** http://localhost/admin-api/
    - **General API:** http://localhost/api/
-   - **Grafana:** http://localhost/grafana/ (admin/admin123)
-   - **Langfuse:** http://localhost/langfuse/
-   - **Prometheus:** http://localhost/prometheus/
+   - **Grafana:** http://localhost:3001/ (admin/admin123)
+   - **Langfuse:** http://localhost:3000/
+   - **Prometheus:** http://localhost:9090/
+
+### Test Environment Setup
+
+```bash
+# Recommended method
+./scripts/start-test.sh
+
+# Or manually
+docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
+
+# Access via test domain (configure your hosts file)
+echo "127.0.0.1 test.magicain.local" | sudo tee -a /etc/hosts
+```
+
+### Production Deployment
+
+```bash
+# Recommended method
+./scripts/start-prod.sh
+
+# Or manually:
+# 1. Set up environment variables
+cp .env.example .env
+# Edit .env with your production values including Docker registry credentials
+
+# 2. Deploy to production
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+```
 
 ## Service Architecture
 
@@ -102,20 +141,23 @@ Pre-configured with sample data including demo users and AI agents.
 
 ### Service Management
 ```bash
-# Start all services
+# Development (automatic with override)
 docker-compose up -d
-
-# Start specific services only
-docker-compose up -d postgres redis nginx-proxy
-
-# View logs for all services
 docker-compose logs -f
-
-# View logs for specific service
-docker-compose logs -f backend
-
-# Stop all services
 docker-compose down
+
+# Test Environment  
+docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
+docker-compose -f docker-compose.yml -f docker-compose.test.yml logs -f
+docker-compose -f docker-compose.yml -f docker-compose.test.yml down
+
+# Production Environment
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+
+# Start specific services (any environment)
+docker-compose up -d postgres redis nginx-proxy
 
 # Stop and remove all data (WARNING: destructive)
 docker-compose down -v

@@ -1,0 +1,86 @@
+# Local Development Environment Override
+# This file is automatically loaded with docker-compose.yml
+# Use: docker-compose up -d
+
+version: '3.8'
+
+services:
+  # Nginx - Use local configuration
+  nginx-proxy:
+    volumes:
+      - ./conf/local.conf:/etc/nginx/nginx.conf:ro
+
+  # Agent UI - Development mode
+  agent-ui:
+    environment:
+      - NODE_ENV=development
+      - VITE_API_URL=http://localhost/api
+      - VITE_ADMIN_API_URL=http://localhost/admin-api
+
+  # Backend - Development settings
+  backend:
+    environment:
+      - SPRING_PROFILES_ACTIVE=local
+      - LOGGING_LEVEL_ROOT=DEBUG
+      - LOGGING_LEVEL_COM_MAGICAIN=DEBUG
+    volumes:
+      - ./backend:/app
+      - /tmp:/tmp
+    working_dir: /app
+    command: ["./gradlew", "bootRun", "--args='--spring.profiles.active=local'"]
+
+  # PostgreSQL - Development settings
+  postgres:
+    environment:
+      - POSTGRES_DB=magicain_dev
+    ports:
+      - "5432:5432"
+
+  # Redis - Development settings  
+  redis:
+    ports:
+      - "6379:6379"
+
+  # Elasticsearch - Development settings
+  elasticsearch:
+    environment:
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+
+  # ClickHouse - Development settings
+  clickhouse:
+    ports:
+      - "8123:8123"
+      - "9000:9000"
+
+  # Langfuse - Development settings
+  langfuse:
+    environment:
+      - NEXTAUTH_URL=http://localhost:3000
+    ports:
+      - "3000:3000"
+
+  # PostgreSQL Langfuse - Development
+  postgres-langfuse:
+    environment:
+      - POSTGRES_DB=langfuse_dev
+
+  # Prometheus - Development settings
+  prometheus:
+    ports:
+      - "9090:9090"
+
+  # Grafana - Development settings  
+  grafana:
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel
+    ports:
+      - "3001:3000"
+
+  # Node Exporter - Development
+  node-exporter:
+    ports:
+      - "9100:9100"

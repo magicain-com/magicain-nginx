@@ -1,0 +1,83 @@
+# Test Environment Configuration
+# Use: docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
+
+version: '3.8'
+
+services:
+  # Nginx - Use test configuration
+  nginx-proxy:
+    volumes:
+      - ./conf/test.conf:/etc/nginx/nginx.conf:ro
+
+  # Agent UI - Test mode
+  agent-ui:
+    environment:
+      - NODE_ENV=test
+      - VITE_API_URL=http://test.magicain.local/api
+      - VITE_ADMIN_API_URL=http://test.magicain.local/admin-api
+
+  # Backend - Test settings
+  backend:
+    environment:
+      - SPRING_PROFILES_ACTIVE=test
+      - LOGGING_LEVEL_ROOT=WARN
+      - LOGGING_LEVEL_COM_MAGICAIN=INFO
+    # Remove development volumes and use container-based deployment
+    volumes: []
+    working_dir: /app
+    command: ["java", "-jar", "/app/application.jar", "--spring.profiles.active=test"]
+
+  # PostgreSQL - Test settings
+  postgres:
+    environment:
+      - POSTGRES_DB=magicain_test
+    # Don't expose ports in test environment
+    ports: []
+
+  # Redis - Test settings
+  redis:
+    # Don't expose ports in test environment  
+    ports: []
+
+  # Elasticsearch - Test settings
+  elasticsearch:
+    environment:
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    # Don't expose ports in test environment
+    ports: []
+
+  # ClickHouse - Test settings
+  clickhouse:
+    # Don't expose ports in test environment
+    ports: []
+
+  # Langfuse - Test settings
+  langfuse:
+    environment:
+      - NEXTAUTH_URL=http://test.magicain.local/langfuse
+    # Don't expose ports in test environment
+    ports: []
+
+  # PostgreSQL Langfuse - Test
+  postgres-langfuse:
+    environment:
+      - POSTGRES_DB=langfuse_test
+
+  # Prometheus - Test settings
+  prometheus:
+    # Don't expose ports in test environment
+    ports: []
+
+  # Grafana - Test settings
+  grafana:
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=test123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+    # Don't expose ports in test environment  
+    ports: []
+
+  # Node Exporter - Test
+  node-exporter:
+    # Don't expose ports in test environment
+    ports: []
