@@ -21,7 +21,7 @@ services:
       - VITE_API_URL=https://magicain.ai/api
       - VITE_ADMIN_API_URL=https://magicain.ai/admin-api
     # Use specific version for production
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:v1.0.0
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:main
     deploy:
       replicas: 2
       resources:
