@@ -49,7 +49,7 @@ services:
 
   # PostgreSQL with PgVector
   postgres:
-    image: pgvector/pgvector:pg16
+    image: docker.m.daocloud.io/pgvector/pgvector:pg16
     environment:
       - POSTGRES_DB=magicain
       - POSTGRES_USER=magicain
@@ -63,7 +63,7 @@ services:
 
   # Redis
   redis:
-    image: redis:8-alpine
+    image: docker.m.daocloud.io/redis:8-alpine
     volumes:
       - redis_data:/data
     networks:
@@ -86,7 +86,7 @@ services:
 
   # ClickHouse - Langfuse Analytics Database
   clickhouse:
-    image: clickhouse/clickhouse-server:latest
+    image: docker.m.daocloud.io/clickhouse/clickhouse-server:latest
     environment:
       - CLICKHOUSE_DB=langfuse
       - CLICKHOUSE_USER=langfuse
@@ -101,7 +101,7 @@ services:
 
   # Langfuse - AI Agent Monitoring
   langfuse:
-    image: langfuse/langfuse:latest
+    image: docker.m.daocloud.io/langfuse/langfuse:latest
     environment:
       - DATABASE_URL=postgresql://langfuse:langfuse123@postgres-langfuse:5432/langfuse
       - CLICKHOUSE_URL=http://langfuse:langfuse123@clickhouse:8123/langfuse
@@ -116,7 +116,7 @@ services:
 
   # Separate PostgreSQL for Langfuse
   postgres-langfuse:
-    image: postgres:16
+    image: docker.m.daocloud.io/postgres:16
     environment:
       - POSTGRES_DB=langfuse
       - POSTGRES_USER=langfuse
@@ -129,7 +129,7 @@ services:
 
   # Prometheus - Metrics Collection
   prometheus:
-    image: prom/prometheus:latest
+    image: docker.m.daocloud.io/prom/prometheus:latest
     volumes:
       - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
       - prometheus_data:/prometheus
@@ -146,7 +146,7 @@ services:
 
   # Grafana - Metrics Visualization
   grafana:
-    image: grafana/grafana:latest
+    image: docker.m.daocloud.io/grafana/grafana:latest
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
@@ -159,7 +159,7 @@ services:
 
   # Node Exporter - System Metrics
   node-exporter:
-    image: prom/node-exporter:latest
+    image: docker.m.daocloud.io/prom/node-exporter:latest
     volumes:
       - /proc:/host/proc:ro
       - /sys:/host/sys:ro

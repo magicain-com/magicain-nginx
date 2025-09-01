@@ -18,8 +18,8 @@ services:
   agent-ui:
     environment:
       - NODE_ENV=production
-      - VITE_API_URL=https://magicain.ai/api
-      - VITE_ADMIN_API_URL=https://magicain.ai/admin-api
+      - VITE_API_URL=https://magictensor.ai/api
+      - VITE_ADMIN_API_URL=https://magictensor.ai/admin-api
     # Use specific version for production
     image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:main
     deploy:
