@@ -49,7 +49,7 @@ services:
 
   # PostgreSQL with PgVector
   postgres:
-    image: pgvector/pgvector:pg17
+    image: pgvector/pgvector:pg16
     environment:
       - POSTGRES_DB=magicain
       - POSTGRES_USER=magicain
@@ -63,7 +63,7 @@ services:
 
   # Redis
   redis:
-    image: redis:7-alpine
+    image: redis:8-alpine
     volumes:
       - redis_data:/data
     networks:
@@ -116,7 +116,7 @@ services:
 
   # Separate PostgreSQL for Langfuse
   postgres-langfuse:
-    image: postgres:17
+    image: postgres:16
     environment:
       - POSTGRES_DB=langfuse
       - POSTGRES_USER=langfuse
