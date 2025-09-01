@@ -46,12 +46,12 @@ This project provides a complete development and production environment includin
    ./scripts/docker-login.sh
    
    # Start services
-   docker-compose up -d
+   docker compose up -d
    ```
 
 3. **Wait for services to initialize (check logs):**
    ```bash
-   docker-compose logs -f postgres
+   docker compose logs -f postgres
    # Wait for "database system is ready to accept connections"
    ```
 
@@ -79,7 +79,7 @@ This project provides a complete development and production environment includin
 ./scripts/start-test.sh
 
 # Or manually
-docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.test.yml up -d
 
 # Access via test domain (configure your hosts file)
 echo "127.0.0.1 test.magicain.local" | sudo tee -a /etc/hosts
@@ -97,7 +97,7 @@ cp .env.example .env
 # Edit .env with your production values including Docker registry credentials
 
 # 2. Deploy to production
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 ```
 
 ## Service Architecture
@@ -142,43 +142,43 @@ Pre-configured with sample data including demo users and AI agents.
 ### Service Management
 ```bash
 # Development (automatic with override)
-docker-compose up -d
-docker-compose logs -f
-docker-compose down
+docker compose up -d
+docker compose logs -f
+docker compose down
 
 # Test Environment  
-docker-compose -f docker-compose.yml -f docker-compose.test.yml up -d
-docker-compose -f docker-compose.yml -f docker-compose.test.yml logs -f
-docker-compose -f docker-compose.yml -f docker-compose.test.yml down
+docker compose -f docker-compose.yml -f docker-compose.test.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.test.yml logs -f
+docker compose -f docker-compose.yml -f docker-compose.test.yml down
 
 # Production Environment
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml down
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.yml -f docker-compose.prod.yml down
 
 # Start specific services (any environment)
-docker-compose up -d postgres redis nginx-proxy
+docker compose up -d postgres redis nginx-proxy
 
 # Stop and remove all data (WARNING: destructive)
-docker-compose down -v
+docker compose down -v
 ```
 
 ### Database Operations
 ```bash
 # Connect to database
-docker-compose exec postgres psql -U magicain -d magicain
+docker compose exec postgres psql -U magicain -d magicain
 
 # Run database migrations
-docker-compose exec postgres psql -U magicain -d magicain -f /docker-entrypoint-initdb.d/migration.sql
+docker compose exec postgres psql -U magicain -d magicain -f /docker-entrypoint-initdb.d/migration.sql
 
 # Backup database
-docker-compose exec postgres pg_dump -U magicain magicain > backup.sql
+docker compose exec postgres pg_dump -U magicain magicain > backup.sql
 ```
 
 ### Monitoring
 ```bash
 # Check service health
-docker-compose ps
+docker compose ps
 
 # View Prometheus targets
 curl http://localhost:9090/api/v1/targets
@@ -222,7 +222,7 @@ netstat -tlnp | grep :80
 **Database connection issues:**
 ```bash
 # Test database connectivity
-docker-compose exec backend curl http://localhost:8080/actuator/health
+docker compose exec backend curl http://localhost:8080/actuator/health
 ```
 
 **Memory issues:**

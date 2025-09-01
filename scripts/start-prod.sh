@@ -30,11 +30,11 @@ sudo chown -R 1000:1000 /data/
 
 # Start production services
 echo "🔧 Starting production environment services..."
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
 
 # Check service status
 echo "📊 Service Status:"
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml ps
+docker compose -f docker-compose.yml -f docker-compose.prod.yml ps
 
 echo ""
 echo "✅ Production environment started!"
@@ -44,8 +44,8 @@ echo "   - Main application: https://magicain.ai/"
 echo "   - (SSL certificates must be configured)"
 echo ""
 echo "📋 Useful commands:"
-echo "   - View logs: docker-compose -f docker-compose.yml -f docker-compose.prod.yml logs -f"
-echo "   - Stop services: docker-compose -f docker-compose.yml -f docker-compose.prod.yml down"
+echo "   - View logs: docker compose -f docker-compose.yml -f docker-compose.prod.yml logs -f"
+echo "   - Stop services: docker compose -f docker-compose.yml -f docker-compose.prod.yml down"
 echo ""
 echo "⚠️  Production Security Reminders:"
 echo "   - Change all default passwords in .env"

@@ -17,11 +17,11 @@ fi
 
 # Start services
 echo "🔧 Starting all development services..."
-docker-compose up -d
+docker compose up -d
 
 # Check service status
 echo "📊 Service Status:"
-docker-compose ps
+docker compose ps
 
 echo ""
 echo "✅ Development environment started!"
@@ -36,6 +36,6 @@ echo "   - Langfuse: http://localhost:3000/"
 echo "   - Prometheus: http://localhost:9090/"
 echo ""
 echo "📋 Useful commands:"
-echo "   - View logs: docker-compose logs -f"
-echo "   - Stop services: docker-compose down"
-echo "   - Restart: docker-compose restart [service-name]"
+echo "   - View logs: docker compose logs -f"
+echo "   - Stop services: docker compose down"
+echo "   - Restart: docker compose restart [service-name]"

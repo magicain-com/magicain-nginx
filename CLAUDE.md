@@ -90,40 +90,40 @@ Key tables:
 ### Basic Operations
 ```bash
 # Start all services
-docker-compose up -d
+docker compose up -d
 
 # Start specific services
-docker-compose up -d nginx-proxy backend postgres redis
+docker compose up -d nginx-proxy backend postgres redis
 
 # View logs for all services
-docker-compose logs -f
+docker compose logs -f
 
 # View logs for specific service
-docker-compose logs -f backend
+docker compose logs -f backend
 
 # Stop all services
-docker-compose down
+docker compose down
 
 # Stop and remove volumes (WARNING: deletes data)
-docker-compose down -v
+docker compose down -v
 
 # Rebuild services after code changes
-docker-compose up -d --build
+docker compose up -d --build
 ```
 
 ### Database Operations
 ```bash
 # Connect to PostgreSQL
-docker-compose exec postgres psql -U magicain -d magicain
+docker compose exec postgres psql -U magicain -d magicain
 
 # View database logs
-docker-compose logs -f postgres
+docker compose logs -f postgres
 
 # Backup database
-docker-compose exec postgres pg_dump -U magicain magicain > backup.sql
+docker compose exec postgres pg_dump -U magicain magicain > backup.sql
 
 # Restore database
-docker-compose exec -T postgres psql -U magicain magicain < backup.sql
+docker compose exec -T postgres psql -U magicain magicain < backup.sql
 ```
 
 ### Monitoring Operations
@@ -142,7 +142,7 @@ curl http://localhost:3000/api/public/metrics
 
 1. **Start Infrastructure Services:**
    ```bash
-   docker-compose up -d postgres redis elasticsearch langfuse prometheus grafana
+   docker compose up -d postgres redis elasticsearch langfuse prometheus grafana
    ```
 
 2. **Start Your Development Servers:**
@@ -153,7 +153,7 @@ curl http://localhost:3000/api/public/metrics
 
 3. **Start Nginx Proxy:**
    ```bash
-   docker-compose up -d nginx-proxy
+   docker compose up -d nginx-proxy
    ```
 
 4. **Access Applications:**
@@ -164,29 +164,29 @@ curl http://localhost:3000/api/public/metrics
 
 **Nginx Configuration:**
 1. Modify files in `conf/` directory
-2. Run `docker-compose restart nginx-proxy`
-3. Check logs: `docker-compose logs nginx-proxy`
+2. Run `docker compose restart nginx-proxy`
+3. Check logs: `docker compose logs nginx-proxy`
 
 **Monitoring Configuration:**
 1. Update `monitoring/prometheus/prometheus.yml` for new metrics targets
 2. Add dashboards to `monitoring/grafana/dashboards/`
-3. Restart services: `docker-compose restart prometheus grafana`
+3. Restart services: `docker compose restart prometheus grafana`
 
 **Database Changes:**
 1. Add migration scripts to `database/init/`
 2. For existing databases, connect and run migrations manually
-3. Restart: `docker-compose restart postgres`
+3. Restart: `docker compose restart postgres`
 
 ## Troubleshooting
 
 ### Service Health Checks
 ```bash
 # Check if all services are running
-docker-compose ps
+docker compose ps
 
 # Check service health
-docker-compose exec backend curl http://localhost:8080/actuator/health
-docker-compose exec postgres pg_isready -U magicain
+docker compose exec backend curl http://localhost:8080/actuator/health
+docker compose exec postgres pg_isready -U magicain
 ```
 
 ### Common Issues
@@ -197,9 +197,9 @@ docker-compose exec postgres pg_isready -U magicain
 - Verify WebSocket connections for hot reload
 
 **Database Connection Issues:**
-- Check if PostgreSQL is fully started: `docker-compose logs postgres`
-- Verify connection from backend: `docker-compose logs backend`
-- Test connection: `docker-compose exec postgres psql -U magicain -d magicain -c "SELECT 1;"`
+- Check if PostgreSQL is fully started: `docker compose logs postgres`
+- Verify connection from backend: `docker compose logs backend`
+- Test connection: `docker compose exec postgres psql -U magicain -d magicain -c "SELECT 1;"`
 
 **Memory Issues:**
 - Elasticsearch requires significant memory; adjust `ES_JAVA_OPTS` if needed
@@ -209,7 +209,7 @@ docker-compose exec postgres pg_isready -U magicain
 **Port Conflicts:**
 - Check for services already running on required ports
 - Modify port mappings in docker-compose.yml if needed
-- Use `docker-compose port SERVICE` to check assigned ports
+- Use `docker compose port SERVICE` to check assigned ports
 
 ### Performance Optimization
 
