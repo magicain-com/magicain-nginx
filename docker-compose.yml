@@ -66,10 +66,11 @@ services:
     image: docker.m.daocloud.io/redis:8-alpine
     volumes:
       - redis_data:/data
+      - ./config/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
     networks:
       - magicain-network
     restart: unless-stopped
-    command: ["redis-server", "--appendonly", "yes"]
+    command: ["redis-server", "/usr/local/etc/redis/redis.conf"]
 
   # Elasticsearch
   elasticsearch:
