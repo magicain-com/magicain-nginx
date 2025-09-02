@@ -19,7 +19,7 @@ services:
   agent-ui:
     image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:main
     ports:
-      - "8001:4173"
+      - "7001:4173"
     networks:
       - magicain-network
     restart: unless-stopped
