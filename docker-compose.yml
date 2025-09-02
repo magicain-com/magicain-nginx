@@ -69,7 +69,7 @@ services:
     networks:
       - magicain-network
     restart: unless-stopped
-    command: redis-server --appendonly yes
+    command: ["redis-server", "--appendonly", "yes"]
 
   # Elasticsearch
   elasticsearch:
