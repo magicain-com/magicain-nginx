@@ -55,7 +55,7 @@ services:
       - POSTGRES_USER=magicain
       - POSTGRES_PASSWORD=magicain123
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/work/postgresql/data
       - ./database/init:/docker-entrypoint-initdb.d
     networks:
       - magicain-network
@@ -88,9 +88,9 @@ services:
   clickhouse:
     image: docker.m.daocloud.io/clickhouse/clickhouse-server:latest
     environment:
-      - CLICKHOUSE_DB=langfuse
-      - CLICKHOUSE_USER=langfuse
-      - CLICKHOUSE_PASSWORD=langfuse123
+      - CLICKHOUSE_DB=magicain
+      - CLICKHOUSE_USER=magicain
+      - CLICKHOUSE_PASSWORD=magicain123
       - CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT=1
     volumes:
       - clickhouse_data:/var/lib/clickhouse
@@ -103,26 +103,13 @@ services:
   langfuse:
     image: docker.m.daocloud.io/langfuse/langfuse:latest
     environment:
-      - DATABASE_URL=postgresql://langfuse:langfuse123@postgres-langfuse:5432/langfuse
-      - CLICKHOUSE_URL=http://langfuse:langfuse123@clickhouse:8123/langfuse
+      - DATABASE_URL=postgresql://magicain:magicain123@postgres:5432/langfuse
+      - CLICKHOUSE_URL=http://magicain:magicain123@clickhouse:8123/langfuse
       - NEXTAUTH_SECRET=your-secret-key-here
       - TELEMETRY_ENABLED=false
     depends_on:
-      - postgres-langfuse
+      - postgres
       - clickhouse
-    networks:
-      - magicain-network
-    restart: unless-stopped
-
-  # Separate PostgreSQL for Langfuse
-  postgres-langfuse:
-    image: docker.m.daocloud.io/postgres:16
-    environment:
-      - POSTGRES_DB=langfuse
-      - POSTGRES_USER=langfuse
-      - POSTGRES_PASSWORD=langfuse123
-    volumes:
-      - postgres_langfuse_data:/var/lib/postgresql/data
     networks:
       - magicain-network
     restart: unless-stopped
@@ -175,7 +162,6 @@ services:
 
 volumes:
   postgres_data:
-  postgres_langfuse_data:
   redis_data:
   es_data:
   clickhouse_data:
