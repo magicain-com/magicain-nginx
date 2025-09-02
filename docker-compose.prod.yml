@@ -11,7 +11,7 @@ services:
       - "443:443"
     volumes:
       - ./conf/prod.conf:/etc/nginx/nginx.conf:ro
-      - ./ssl:/etc/nginx/ssl:ro
+      - ./cert:/etc/nginx/cert:ro
       - ./logs/nginx:/var/log/nginx
 
   # Agent UI - Production mode
