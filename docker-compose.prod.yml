@@ -112,7 +112,7 @@ services:
     environment:
       - NEXTAUTH_URL=https://magicain.ai/langfuse
       - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET}
-      - DATABASE_URL=postgresql://langfuse_prod:${LANGFUSE_DB_PASSWORD}@postgres-langfuse:5432/langfuse_prod
+      - DATABASE_URL=postgresql://magicain_prod:${POSTGRES_PROD_PASSWORD}@postgres-langfuse:5432/langfuse
       - CLICKHOUSE_URL=http://langfuse_prod:${CLICKHOUSE_PROD_PASSWORD}@clickhouse:8123/langfuse
     # Don't expose Langfuse port in production
     ports: []
@@ -122,19 +122,6 @@ services:
           memory: 1G
         reservations:
           memory: 512M
-
-  # PostgreSQL Langfuse - Production
-  postgres-langfuse:
-    environment:
-      - POSTGRES_DB=langfuse_prod
-      - POSTGRES_USER=langfuse_prod
-      - POSTGRES_PASSWORD=${LANGFUSE_DB_PASSWORD}
-    deploy:
-      resources:
-        limits:
-          memory: 2G
-        reservations:
-          memory: 1G
 
   # Prometheus - Production settings
   prometheus:
@@ -179,12 +166,6 @@ volumes:
       type: none
       o: bind
       device: /data/postgres
-  postgres_langfuse_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /data/postgres-langfuse
   redis_data:
     driver: local
     driver_opts:
