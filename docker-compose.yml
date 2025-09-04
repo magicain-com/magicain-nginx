@@ -104,7 +104,7 @@ services:
     image: docker.m.daocloud.io/langfuse/langfuse:latest
     environment:
       - DATABASE_URL=postgresql://magicain:magicain123@postgres:5432/langfuse
-      - CLICKHOUSE_URL=http://clickhouse:8123
+      - CLICKHOUSE_URL=http://clickhouse:9000
       - CLICKHOUSE_MIGRATION_URL=http://clickhouse:9000
       - CLICKHOUSE_USER=magicain
       - CLICKHOUSE_PASSWORD=magicain123
