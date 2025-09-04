@@ -111,11 +111,7 @@ services:
       - NEXTAUTH_URL=https://magicain.ai/langfuse
       - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET}
       - DATABASE_URL=postgresql://magicain:${POSTGRES_PROD_PASSWORD}@postgres:5432/langfuse
-      - CLICKHOUSE_URL=http://clickhouse:8123
-      - CLICKHOUSE_MIGRATION_URL=http://clickhouse:9000
-      - CLICKHOUSE_USER=magicain
       - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PROD_PASSWORD}
-      - CLICKHOUSE_DB=langfuse
     # Don't expose Langfuse port in production
     ports: []
     deploy:
