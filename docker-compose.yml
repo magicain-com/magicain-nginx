@@ -100,11 +100,11 @@ services:
     restart: unless-stopped
 
   # Langfuse - AI Agent Monitoring
-  langfuse:
-    image: docker.m.daocloud.io/langfuse/langfuse:latest
+  langfuse-worker:
+    image: docker.m.daocloud.io/langfuse/langfuse-worker:3
     environment:
       - DATABASE_URL=postgresql://magicain:magicain123@postgres:5432/langfuse
-      - CLICKHOUSE_URL=clickhouse://clickhouse:9000
+      - CLICKHOUSE_URL=http://clickhouse:8123
       - CLICKHOUSE_MIGRATION_URL=clickhouse://clickhouse:9000
       - CLICKHOUSE_USER=magicain
       - CLICKHOUSE_PASSWORD=magicain123
@@ -117,6 +117,25 @@ services:
     networks:
       - magicain-network
     restart: unless-stopped
+
+  langfuse-web:
+    image: docker.m.daocloud.io/langfuse/langfuse:3
+    restart: always
+    depends_on: *langfuse-depends-on
+    ports:
+      - 3000:3000
+    environment:
+      <<: *langfuse-worker-env
+      NEXTAUTH_SECRET: mysecret # CHANGEME
+      LANGFUSE_INIT_ORG_ID: ${LANGFUSE_INIT_ORG_ID:-}
+      LANGFUSE_INIT_ORG_NAME: ${LANGFUSE_INIT_ORG_NAME:-}
+      LANGFUSE_INIT_PROJECT_ID: ${LANGFUSE_INIT_PROJECT_ID:-}
+      LANGFUSE_INIT_PROJECT_NAME: ${LANGFUSE_INIT_PROJECT_NAME:-}
+      LANGFUSE_INIT_PROJECT_PUBLIC_KEY: ${LANGFUSE_INIT_PROJECT_PUBLIC_KEY:-}
+      LANGFUSE_INIT_PROJECT_SECRET_KEY: ${LANGFUSE_INIT_PROJECT_SECRET_KEY:-}
+      LANGFUSE_INIT_USER_EMAIL: ${LANGFUSE_INIT_USER_EMAIL:-}
+      LANGFUSE_INIT_USER_NAME: ${LANGFUSE_INIT_USER_NAME:-}
+      LANGFUSE_INIT_USER_PASSWORD: ${LANGFUSE_INIT_USER_PASSWORD:-}
 
   # Prometheus - Metrics Collection
   prometheus:
