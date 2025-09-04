@@ -111,8 +111,9 @@ services:
       - CLICKHOUSE_DB=langfuse
       - NEXTAUTH_SECRET=your-secret-key-here
       - TELEMETRY_ENABLED=false
-    depends_on:
+    depends_on: &langfuse-depends-on
       - postgres
+      - redis
       - clickhouse
     networks:
       - magicain-network
