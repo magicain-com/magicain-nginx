@@ -102,7 +102,7 @@ services:
   # Langfuse - AI Agent Monitoring
   langfuse-worker:
     image: docker.m.daocloud.io/langfuse/langfuse-worker:3
-    environment:
+    environment: &langfuse-worker-env
       - DATABASE_URL=postgresql://magicain:magicain123@postgres:5432/langfuse
       - CLICKHOUSE_URL=http://clickhouse:8123
       - CLICKHOUSE_MIGRATION_URL=clickhouse://clickhouse:9000
