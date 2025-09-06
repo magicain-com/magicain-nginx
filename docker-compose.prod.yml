@@ -105,14 +105,30 @@ services:
         reservations:
           memory: 2G
 
-  # Langfuse - Production settings
-  langfuse:
+  # Langfuse Worker - Production settings
+  langfuse-worker:
     environment:
-      - NEXTAUTH_URL=https://magicain.ai/langfuse
-      - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET}
-      - DATABASE_URL=postgresql://magicain:${POSTGRES_PROD_PASSWORD}@postgres:5432/langfuse
-      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PROD_PASSWORD}
-    # Don't expose Langfuse port in production
+      - NEXTAUTH_URL=https://magictensor.ai/langfuse
+      - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET:-mysecret}
+      - DATABASE_URL=postgresql://magicain:${POSTGRES_PROD_PASSWORD:-magicain123}@postgres:5432/magicain
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PROD_PASSWORD:-magicain123}
+    # Don't expose worker port in production
+    ports: []
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # Langfuse Web - Production settings
+  langfuse-web:
+    environment:
+      - NEXTAUTH_URL=https://magictensor.ai/langfuse
+      - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET:-mysecret}
+      - DATABASE_URL=postgresql://magicain:${POSTGRES_PROD_PASSWORD:-magicain123}@postgres:5432/magicain
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PROD_PASSWORD:-magicain123}
+    # Don't expose langfuse port in production
     ports: []
     deploy:
       resources:
@@ -194,3 +210,15 @@ volumes:
       type: none
       o: bind
       device: /data/grafana
+  clickhouse_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/clickhouse/logs
+  minio_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/minio

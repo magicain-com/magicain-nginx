@@ -55,17 +55,12 @@ services:
       - "8123:8123"
       - "9000:9000"
 
-  # Langfuse - Development settings
-  langfuse:
+  # Langfuse Web - Development settings
+  langfuse-web:
     environment:
       - NEXTAUTH_URL=http://localhost:3000
     ports:
       - "3000:3000"
-
-  # PostgreSQL Langfuse - Development
-  postgres-langfuse:
-    environment:
-      - POSTGRES_DB=langfuse_dev
 
   # Prometheus - Development settings
   prometheus:
