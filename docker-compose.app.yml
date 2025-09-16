@@ -6,6 +6,7 @@ services:
     build: .
     ports:
       - "${NGINX_PORT}:80"
+      - 443
     depends_on:
       - backend
       - langfuse-web
@@ -15,6 +16,7 @@ services:
     volumes:
       - ./logs/nginx:/var/log/nginx
       - ${NGINX_CONFIG_FILE}:/etc/nginx/nginx.conf
+      - ./cert:/etc/nginx/cert:ro
 
   # Agent UI Frontend
   agent-ui:
