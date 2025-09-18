@@ -17,6 +17,17 @@ services:
       - ./logs/nginx:/var/log/nginx
       - ${NGINX_CONFIG_FILE}:/etc/nginx/nginx.conf
       - ./cert:/etc/nginx/cert:ro
+  
+  # Admin UI Frontend
+  admin-ui:
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:main
+    ports:
+      - "${ADMIN_UI_PORT}:80"
+    networks:
+      - magicain-app
+    restart: unless-stopped
+    environment:
+      - NODE_ENV=${NODE_ENV}
 
   # Agent UI Frontend
   agent-ui:
