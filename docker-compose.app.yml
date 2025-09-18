@@ -40,22 +40,6 @@ services:
     environment:
       - NODE_ENV=${NODE_ENV}
 
-  # Backend Java Application
-  backend:
-    image: openjdk:17-jdk-slim
-    environment:
-      - SPRING_DATASOURCE_URL=${DATABASE_URL}
-      - SPRING_DATASOURCE_USERNAME=${POSTGRES_USER}
-      - SPRING_DATASOURCE_PASSWORD=${POSTGRES_PASSWORD}
-      - SPRING_REDIS_HOST=${REDIS_HOST}
-      - SPRING_REDIS_PORT=${REDIS_PORT}
-      - ELASTICSEARCH_HOST=${ELASTICSEARCH_HOST}
-      - ELASTICSEARCH_PORT=${ELASTICSEARCH_PORT}
-      - LANGFUSE_HOST=langfuse-web
-      - LANGFUSE_PORT=3000
-    networks:
-      - magicain-app
-    restart: unless-stopped
 
   # MinIO - S3 Compatible Storage for Langfuse
   minio:
