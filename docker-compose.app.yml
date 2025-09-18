@@ -19,7 +19,7 @@ services:
   admin-ui:
     image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:main
     ports:
-      - "80:80"
+      - "8080:8080"
     networks:
       - magicain-app
     restart: unless-stopped
