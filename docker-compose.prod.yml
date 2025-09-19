@@ -106,36 +106,36 @@ services:
           memory: 2G
 
   # Langfuse Worker - Production settings
-  langfuse-worker:
-    environment:
-      - NEXTAUTH_URL=https://magictensor.ai/langfuse
-      - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET:-mysecret}
-      - DATABASE_URL=postgresql://magicain:${POSTGRES_PROD_PASSWORD:-magicain123}@postgres:5432/magicain
-      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PROD_PASSWORD:-magicain123}
-    # Don't expose worker port in production
-    ports: []
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 512M
+  # langfuse-worker:
+  #   environment:
+  #     - NEXTAUTH_URL=https://magictensor.ai/langfuse
+  #     - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET:-mysecret}
+  #     - DATABASE_URL=postgresql://magicain:${POSTGRES_PROD_PASSWORD:-magicain123}@postgres:5432/magicain
+  #     - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PROD_PASSWORD:-magicain123}
+  #   # Don't expose worker port in production
+  #   ports: []
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 1G
+  #       reservations:
+  #         memory: 512M
 
   # Langfuse Web - Production settings
-  langfuse-web:
-    environment:
-      - NEXTAUTH_URL=https://magictensor.ai/langfuse
-      - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET:-mysecret}
-      - DATABASE_URL=postgresql://magicain:${POSTGRES_PROD_PASSWORD:-magicain123}@postgres:5432/magicain
-      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PROD_PASSWORD:-magicain123}
-    # Don't expose langfuse port in production
-    ports: []
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 512M
+  # langfuse-web:
+  #   environment:
+  #     - NEXTAUTH_URL=https://magictensor.ai/langfuse
+  #     - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET:-mysecret}
+  #     - DATABASE_URL=postgresql://magicain:${POSTGRES_PROD_PASSWORD:-magicain123}@postgres:5432/magicain
+  #     - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PROD_PASSWORD:-magicain123}
+  #   # Don't expose langfuse port in production
+  #   ports: []
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 1G
+  #       reservations:
+  #         memory: 512M
 
   # Prometheus - Production settings
   prometheus:
@@ -168,9 +168,9 @@ services:
           memory: 512M
 
   # Node Exporter - Production
-  node-exporter:
-    # Don't expose node-exporter port in production
-    ports: []
+  # node-exporter:
+  #   # Don't expose node-exporter port in production
+  #   ports: []
 
 # Production-specific volumes with backup configuration
 volumes:
@@ -216,9 +216,9 @@ volumes:
       type: none
       o: bind
       device: /data/clickhouse/logs
-  minio_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /data/minio
+  # minio_data:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: /data/minio

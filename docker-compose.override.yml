@@ -56,11 +56,11 @@ services:
       - "9000:9000"
 
   # Langfuse Web - Development settings
-  langfuse-web:
-    environment:
-      - NEXTAUTH_URL=http://localhost:3000
-    ports:
-      - "3000:3000"
+  # langfuse-web:
+  #   environment:
+  #     - NEXTAUTH_URL=http://localhost:3000
+  #   ports:
+  #     - "3000:3000"
 
   # Prometheus - Development settings
   prometheus:
@@ -76,6 +76,6 @@ services:
       - "3001:3000"
 
   # Node Exporter - Development
-  node-exporter:
-    ports:
-      - "9100:9100"
+  # node-exporter:
+  #   ports:
+  #     - "9100:9100"

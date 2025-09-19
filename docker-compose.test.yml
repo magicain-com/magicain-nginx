@@ -52,16 +52,16 @@ services:
     ports: []
 
   # Langfuse - Test settings
-  langfuse:
-    environment:
-      - NEXTAUTH_URL=http://test.magicain.local/langfuse
-    # Don't expose ports in test environment
-    ports: []
+  # langfuse:
+  #   environment:
+  #     - NEXTAUTH_URL=http://test.magicain.local/langfuse
+  #   # Don't expose ports in test environment
+  #   ports: []
 
   # PostgreSQL Langfuse - Test
-  postgres-langfuse:
-    environment:
-      - POSTGRES_DB=langfuse_test
+  # postgres-langfuse:
+  #   environment:
+  #     - POSTGRES_DB=langfuse_test
 
   # Prometheus - Test settings
   prometheus:
@@ -78,6 +78,6 @@ services:
     ports: []
 
   # Node Exporter - Test
-  node-exporter:
-    # Don't expose ports in test environment
-    ports: []
+  # node-exporter:
+  #   # Don't expose ports in test environment
+  #   ports: []
