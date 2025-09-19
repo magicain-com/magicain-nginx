@@ -17,15 +17,15 @@ services:
       - /work/magicain/magicain-admin-ui/dist:/usr/share/nginx/html/admin-ui
   
   # Admin UI Frontend
-  admin-ui:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:main
-    ports:
-      - "8080:8080"
-    networks:
-      - magicain-app
-    restart: unless-stopped
-    environment:
-      - NODE_ENV=${NODE_ENV}
+  # admin-ui:
+  #   image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:main
+  #   ports:
+  #     - "8080:8080"
+  #   networks:
+  #     - magicain-app
+  #   restart: unless-stopped
+  #   environment:
+  #     - NODE_ENV=${NODE_ENV}
 
   # Agent UI Frontend
   agent-ui:
