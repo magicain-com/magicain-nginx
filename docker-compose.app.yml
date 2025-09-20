@@ -14,6 +14,7 @@ services:
       - ./logs/nginx:/var/log/nginx
       - ${NGINX_CONFIG_FILE}:/etc/nginx/nginx.conf
       - ./cert:/etc/nginx/cert:ro
+      - /work/magicain/magicain-admin-ui/dist:/usr/share/nginx/html/admin-ui
   
   # Admin UI Frontend
   admin-ui:
