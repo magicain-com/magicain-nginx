@@ -34,6 +34,15 @@ services:
       - magicain-app
     restart: unless-stopped
 
+  # User UI Frontend
+  agent-ui:
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/user-ui:main
+    ports:
+      - "8082:8082"
+    networks:
+      - magicain-app
+    restart: unless-stopped
+
 
   # MinIO - S3 Compatible Storage for Langfuse
   # minio:
