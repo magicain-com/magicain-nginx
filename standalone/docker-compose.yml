@@ -1,0 +1,91 @@
+# Standalone Environment Configuration  
+# Use: docker-compose up -d
+
+version: '3.8'
+
+services:
+  # Nginx - Use production configuration with SSL
+  nginx-proxy:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./conf/standalone.conf:/etc/nginx/nginx.conf:ro
+      - ./cert:/etc/nginx/cert:ro
+      - ./logs/nginx:/var/log/nginx
+
+  # Admin UI Frontend
+  admin-ui:
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:main-arm64
+    ports:
+      - "8080:8080"
+    networks:
+      - magicain-app
+    restart: unless-stopped
+
+  # Agent UI Frontend
+  agent-ui:
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:main-arm64
+    ports:
+      - "8081:8081"
+    networks:
+      - magicain-app
+    restart: unless-stopped
+
+  # User UI Frontend
+  user-ui:
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/user-ui:main-arm64
+    ports:
+      - "8082:8082"
+    networks:
+      - magicain-app
+    restart: unless-stopped
+
+  # Cloud Backend
+  cloud:
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:main-arm64
+    ports:
+      - "48080:48080"
+    networks:
+      - magicain-app
+    restart: unless-stopped
+
+  # PostgreSQL - Production settings
+  postgres:
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PROD_PASSWORD}
+    # Don't expose database port in production
+    ports: []
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # Redis - Production settings
+  redis:
+    # Don't expose Redis port in production
+    ports: []
+    command: redis-server --appendonly yes
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+# Production-specific volumes with backup configuration
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/postgres
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/redis
