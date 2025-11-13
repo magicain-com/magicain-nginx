@@ -6,9 +6,13 @@ version: '3.8'
 services:
   # Nginx - Use production configuration with SSL
   nginx-proxy:
+    build: .
     ports:
       - "80:80"
       - "443:443"
+    networks:
+      - magicain-app
+    restart: unless-stopped
     volumes:
       - ./conf/standalone.conf:/etc/nginx/nginx.conf:ro
       - ./cert:/etc/nginx/cert:ro
@@ -50,30 +54,43 @@ services:
       - magicain-app
     restart: unless-stopped
 
-  # PostgreSQL - Production settings
+  # PostgreSQL with PgVector
   postgres:
+    image: docker.m.daocloud.io/pgvector/pgvector:pg16
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U magicain"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
     environment:
-      - POSTGRES_PASSWORD=${POSTGRES_PROD_PASSWORD}
-    # Don't expose database port in production
-    ports: []
-    deploy:
-      resources:
-        limits:
-          memory: 4G
-        reservations:
-          memory: 2G
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - magicain-app
 
-  # Redis - Production settings
+  # Redis
   redis:
-    # Don't expose Redis port in production
-    ports: []
-    command: redis-server --appendonly yes
-    deploy:
-      resources:
-        limits:
-          memory: 1G
-        reservations:
-          memory: 512M
+    image: docker.m.daocloud.io/redis:7-alpine
+    restart: unless-stopped
+    command: >
+      redis-server --appendonly yes
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - magicain-app
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 10s
+      retries: 10
 
 # Production-specific volumes with backup configuration
 volumes:
@@ -89,3 +106,7 @@ volumes:
       type: none
       o: bind
       device: /data/redis
+
+networks:
+  magicain-app:
+    driver: bridge

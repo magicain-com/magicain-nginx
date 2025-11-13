@@ -21,9 +21,18 @@ fi
 echo "📦 Installing Docker packages from: $DOCKER_RPM_DIR"
 echo ""
 
-# Install Docker RPM packages
-echo "⏳ Installing Docker RPM packages..."
+# Install Docker dependencies first
+echo "⏳ Installing Docker dependencies (libcgroup, container-selinux)..."
 cd "$DOCKER_RPM_DIR"
+if sudo rpm -ivh libcgroup-*.rpm container-selinux-*.rpm; then
+    echo "✅ Docker dependencies installed successfully"
+else
+    echo "❌ Failed to install Docker dependencies"
+    exit 1
+fi
+
+echo ""
+echo "⏳ Installing Docker RPM packages..."
 if sudo rpm -ivh containerd.io-*.rpm docker-ce-*.rpm docker-ce-cli-*.rpm docker-compose-plugin-*.rpm; then
     echo "✅ Docker packages installed successfully"
 else
