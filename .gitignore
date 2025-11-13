@@ -11,6 +11,9 @@ logs/
 # Docker volumes and data
 data/
 
+# Docker images and infra packages
+standalone/docker/
+
 # Temporary files
 *.tmp
 *.log
