@@ -222,11 +222,40 @@ docker compose logs -f nginx-proxy
 
 ### 更新服务
 
+#### 方式一：一键更新（推荐）
+
+使用安装脚本自动更新，会自动检测已运行的容器并进行更新：
+
 ```bash
-# 拉取最新镜像
+cd standalone
+
+# 如果有新的离线镜像包，替换 docker/images 目录中的 tar 文件
+
+# 运行更新脚本
+sudo bash scripts/install-and-start.sh
+```
+
+脚本会自动：
+1. 加载新镜像（覆盖旧镜像）
+2. 停止旧版本容器
+3. 使用新镜像重新创建并启动容器
+4. **保留所有数据库和配置数据**
+
+#### 方式二：手动更新
+
+```bash
+cd standalone
+
+# 拉取最新镜像（在线方式）
 docker compose pull
 
-# 重启服务
+# 或者加载离线镜像包
+docker load -i docker/images/xxx.tar
+
+# 停止并删除旧容器
+docker compose down
+
+# 使用新镜像启动服务
 docker compose up -d
 ```
 

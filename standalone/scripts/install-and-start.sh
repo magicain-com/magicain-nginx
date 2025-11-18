@@ -17,6 +17,10 @@ echo -e "${BLUE}================================${NC}"
 echo -e "${BLUE}Magicain Standalone 安装启动脚本${NC}"
 echo -e "${BLUE}================================${NC}"
 echo ""
+echo "本脚本支持:"
+echo "  ✓ 全新安装部署"
+echo "  ✓ 在线更新（保留数据）"
+echo ""
 
 # 检查是否为 root 用户
 if [ "$EUID" -ne 0 ]; then 
@@ -132,6 +136,8 @@ echo ""
 IMAGE_DIR="$STANDALONE_DIR/docker/images"
 if [ -d "$IMAGE_DIR" ] && [ -n "$(ls -A $IMAGE_DIR/*.tar 2>/dev/null)" ]; then
     echo "发现离线镜像包，开始加载..."
+    echo -e "${BLUE}ℹ️  如存在同名旧镜像，将被自动覆盖为新版本${NC}"
+    echo ""
     LOADED_COUNT=0
     FAILED_COUNT=0
     
@@ -145,10 +151,10 @@ if [ -d "$IMAGE_DIR" ] && [ -n "$(ls -A $IMAGE_DIR/*.tar 2>/dev/null)" ]; then
                 echo -e "${RED}❌ 加载失败: $(basename "$IMAGE_TAR")${NC}"
                 ((FAILED_COUNT++))
             fi
+            echo ""
         fi
     done
     
-    echo ""
     if [ $FAILED_COUNT -eq 0 ]; then
         echo -e "${GREEN}✅ 所有镜像加载成功 ($LOADED_COUNT 个镜像)${NC}"
     else
@@ -192,11 +198,14 @@ if [ ! -f "$ENV_FILE" ]; then
     # 生成随机密码
     RANDOM_PASSWORD=$(openssl rand -base64 32 | tr -d "=+/" | cut -c1-25)
     cat > "$ENV_FILE" << EOF
-# PostgreSQL 生产环境密码
-POSTGRES_PROD_PASSWORD=$RANDOM_PASSWORD
+# PostgreSQL 配置
+POSTGRES_USER=magicain
+POSTGRES_PASSWORD=$RANDOM_PASSWORD
 EOF
     echo -e "${GREEN}✅ .env 文件已创建${NC}"
-    echo -e "${YELLOW}⚠️  请记录 PostgreSQL 密码: $RANDOM_PASSWORD${NC}"
+    echo -e "${YELLOW}⚠️  请记录 PostgreSQL 配置:${NC}"
+    echo -e "${YELLOW}    用户名: magicain${NC}"
+    echo -e "${YELLOW}    密码: $RANDOM_PASSWORD${NC}"
     echo -e "${YELLOW}⚠️  建议修改 .env 文件中的密码为更安全的密码${NC}"
 else
     echo -e "${GREEN}✅ .env 文件已存在${NC}"
@@ -216,20 +225,32 @@ if [ ! -f "docker-compose.yml" ]; then
     exit 1
 fi
 
-# 拉取最新镜像（如果使用网络）
-echo "检查并拉取 Docker 镜像..."
-docker compose pull || {
-    echo -e "${YELLOW}⚠️  部分镜像拉取失败，将使用已存在的镜像${NC}"
-}
-
-# 启动服务
-echo "启动 Docker Compose 服务..."
-if docker compose up -d; then
-    echo -e "${GREEN}✅ 服务启动成功${NC}"
+# 检查是否有运行中的容器
+RUNNING_CONTAINERS=$(docker compose ps -q 2>/dev/null | wc -l)
+if [ "$RUNNING_CONTAINERS" -gt 0 ]; then
+    echo -e "${YELLOW}检测到已运行的容器，将进行更新...${NC}"
+    echo -e "${BLUE}ℹ️  数据库和配置数据将被保留${NC}"
+    echo ""
+    echo "停止旧版本容器..."
+    docker compose down
+    echo ""
+    echo "使用新镜像重新创建并启动服务..."
+    if docker compose up -d; then
+        echo -e "${GREEN}✅ 服务更新成功${NC}"
+    else
+        echo -e "${RED}❌ 服务更新失败${NC}"
+        echo "查看日志: docker compose logs"
+        exit 1
+    fi
 else
-    echo -e "${RED}❌ 服务启动失败${NC}"
-    echo "查看日志: docker compose logs"
-    exit 1
+    echo "启动 Docker Compose 服务..."
+    if docker compose up -d; then
+        echo -e "${GREEN}✅ 服务启动成功${NC}"
+    else
+        echo -e "${RED}❌ 服务启动失败${NC}"
+        echo "查看日志: docker compose logs"
+        exit 1
+    fi
 fi
 
 echo ""

@@ -1,4 +1,4 @@
-FROM m.daocloud.io/docker.io/nginx:latest
+FROM docker.m.daocloud.io/nginx:1.25-alpine
 
 COPY conf/standalone.conf /etc/nginx/nginx.conf
 
