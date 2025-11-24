@@ -1,0 +1,224 @@
+# Production Environment Configuration  
+# Use: docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+version: '3.8'
+
+services:
+  # Nginx - Use production configuration with SSL
+  nginx-proxy:
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./conf/prod.conf:/etc/nginx/nginx.conf:ro
+      - ./cert:/etc/nginx/cert:ro
+      - ./logs/nginx:/var/log/nginx
+
+  # Agent UI - Production mode
+  agent-ui:
+    environment:
+      - NODE_ENV=production
+      - VITE_API_URL=https://magictensor.ai/api
+      - VITE_ADMIN_API_URL=https://magictensor.ai/admin-api
+    # Use specific version for production
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:main
+    deploy:
+      replicas: 2
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  # Backend - Production settings with load balancing
+  backend:
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - LOGGING_LEVEL_ROOT=WARN
+      - LOGGING_LEVEL_COM_MAGICAIN=INFO
+      - SERVER_PORT=8080
+      - JAVA_OPTS=-Xmx2g -Xms1g -XX:+UseG1GC
+    # Remove development volumes
+    volumes: []
+    working_dir: /app
+    command: ["java", "-jar", "/app/application.jar", "--spring.profiles.active=prod"]
+    deploy:
+      replicas: 3
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+    # Don't expose backend port directly in production
+    ports: []
+
+  # PostgreSQL - Production settings
+  postgres:
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PROD_PASSWORD}
+    # Don't expose database port in production
+    ports: []
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # Redis - Production settings
+  redis:
+    # Don't expose Redis port in production
+    ports: []
+    command: redis-server --appendonly yes --requirepass ${REDIS_PROD_PASSWORD}
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # Elasticsearch - Production settings
+  elasticsearch:
+    environment:
+      - ES_JAVA_OPTS=-Xms2g -Xmx2g
+      - xpack.security.enabled=true
+      - ELASTIC_PASSWORD=${ELASTIC_PROD_PASSWORD}
+    # Don't expose ES port in production
+    ports: []
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # ClickHouse - Production settings
+  clickhouse:
+    environment:
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PROD_PASSWORD}
+    # Don't expose ClickHouse ports in production
+    ports: []
+    deploy:
+      resources:
+        limits:
+          memory: 4G
+        reservations:
+          memory: 2G
+
+  # Langfuse Worker - Production settings
+  # langfuse-worker:
+  #   environment:
+  #     - NEXTAUTH_URL=https://magictensor.ai/langfuse
+  #     - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET:-mysecret}
+  #     - DATABASE_URL=postgresql://magicain:${POSTGRES_PROD_PASSWORD:-magicain123}@postgres:5432/magicain
+  #     - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PROD_PASSWORD:-magicain123}
+  #   # Don't expose worker port in production
+  #   ports: []
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 1G
+  #       reservations:
+  #         memory: 512M
+
+  # Langfuse Web - Production settings
+  # langfuse-web:
+  #   environment:
+  #     - NEXTAUTH_URL=https://magictensor.ai/langfuse
+  #     - NEXTAUTH_SECRET=${LANGFUSE_NEXTAUTH_SECRET:-mysecret}
+  #     - DATABASE_URL=postgresql://magicain:${POSTGRES_PROD_PASSWORD:-magicain123}@postgres:5432/magicain
+  #     - CLICKHOUSE_PASSWORD=${CLICKHOUSE_PROD_PASSWORD:-magicain123}
+  #   # Don't expose langfuse port in production
+  #   ports: []
+  #   deploy:
+  #     resources:
+  #       limits:
+  #         memory: 1G
+  #       reservations:
+  #         memory: 512M
+
+  # Prometheus - Production settings
+  prometheus:
+    environment:
+      - PROMETHEUS_RETENTION_TIME=30d
+    # Don't expose Prometheus port in production (access via nginx)
+    ports: []
+    deploy:
+      resources:
+        limits:
+          memory: 2G
+        reservations:
+          memory: 1G
+
+  # Grafana - Production settings
+  grafana:
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - GF_SECURITY_ALLOW_EMBEDDING=false
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+    # Don't expose Grafana port in production (access via nginx)
+    ports: []
+    deploy:
+      resources:
+        limits:
+          memory: 1G
+        reservations:
+          memory: 512M
+
+  # Node Exporter - Production
+  # node-exporter:
+  #   # Don't expose node-exporter port in production
+  #   ports: []
+
+# Production-specific volumes with backup configuration
+volumes:
+  postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/postgres
+  redis_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/redis
+  es_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/elasticsearch
+  clickhouse_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/clickhouse
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/prometheus
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/grafana
+  clickhouse_logs:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/clickhouse/logs
+  # minio_data:
+  #   driver: local
+  #   driver_opts:
+  #     type: none
+  #     o: bind
+  #     device: /data/minio

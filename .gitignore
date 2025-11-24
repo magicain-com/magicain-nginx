@@ -1,0 +1,41 @@
+# SSL Certificates and Keys
+cert/
+ssl/
+
+# Log files
+logs/
+
+# Environment variables
+.env
+
+# Docker volumes and data
+data/
+
+# Docker images and infra packages
+# standalone/docker/ # Removed to allow LFS tracking
+# *.tar # Managed by LFS
+# *.rpm # Managed by LFS
+
+# Temporary files
+*.tmp
+*.log
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# IDE files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Backup files
+*.bak
+*.backup

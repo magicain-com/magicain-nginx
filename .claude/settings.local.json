@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ssh:*)",
+      "Bash(docker compose:*)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "Bash(curl:*)",
+      "Bash(./scripts/start_prod.sh:*)",
+      "Bash(./scripts/start-prod.sh:*)",
+      "Bash(ss:*)",
+      "Bash(docker system prune:*)"
+    ],
+    "deny": []
+  }
+}
