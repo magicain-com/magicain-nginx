@@ -135,21 +135,45 @@ echo ""
 
 IMAGE_DIR="$STANDALONE_DIR/docker/images"
 if [ -d "$IMAGE_DIR" ] && [ -n "$(ls -A $IMAGE_DIR/*.tar 2>/dev/null)" ]; then
-    echo "发现离线镜像包，开始加载..."
+    TOTAL_IMAGES=$(ls -1 "$IMAGE_DIR"/*.tar 2>/dev/null | wc -l)
+    echo "发现 $TOTAL_IMAGES 个离线镜像包，开始加载..."
     echo -e "${BLUE}ℹ️  如存在同名旧镜像，将被自动覆盖为新版本${NC}"
+    echo -e "${BLUE}ℹ️  大文件加载可能需要几分钟，请耐心等待${NC}"
     echo ""
     LOADED_COUNT=0
     FAILED_COUNT=0
+    CURRENT_INDEX=0
     
     for IMAGE_TAR in "$IMAGE_DIR"/*.tar; do
         if [ -f "$IMAGE_TAR" ]; then
-            echo "加载镜像: $(basename "$IMAGE_TAR")"
-            if docker load -i "$IMAGE_TAR"; then
-                echo -e "${GREEN}✅ 加载成功: $(basename "$IMAGE_TAR")${NC}"
-                ((LOADED_COUNT++))
+            IMAGE_NAME=$(basename "$IMAGE_TAR")
+            IMAGE_SIZE=$(du -h "$IMAGE_TAR" | cut -f1)
+            CURRENT_INDEX=$((CURRENT_INDEX + 1))
+            echo "[$CURRENT_INDEX/$TOTAL_IMAGES] 加载镜像: $IMAGE_NAME (大小: $IMAGE_SIZE)"
+            echo -e "${BLUE}ℹ️  正在加载，请耐心等待...${NC}"
+            
+            # 使用临时文件捕获输出，避免 grep 退出码问题
+            TEMP_OUTPUT=$(mktemp)
+            
+            # 执行 docker load 并捕获输出和退出码
+            set +e  # 临时禁用错误退出
+            docker load -i "$IMAGE_TAR" > "$TEMP_OUTPUT" 2>&1
+            LOAD_EXIT_CODE=$?
+            set -e  # 恢复错误退出
+            
+            # 显示非空输出行
+            if [ -s "$TEMP_OUTPUT" ]; then
+                grep -v "^$" "$TEMP_OUTPUT" || true
+            fi
+            rm -f "$TEMP_OUTPUT"
+            
+            # 根据退出码判断成功或失败
+            if [ $LOAD_EXIT_CODE -eq 0 ]; then
+                echo -e "${GREEN}✅ 加载成功: $IMAGE_NAME${NC}"
+                ((LOADED_COUNT+=1))
             else
-                echo -e "${RED}❌ 加载失败: $(basename "$IMAGE_TAR")${NC}"
-                ((FAILED_COUNT++))
+                echo -e "${RED}❌ 加载失败: $IMAGE_NAME (退出码: $LOAD_EXIT_CODE)${NC}"
+                ((FAILED_COUNT+=1))
             fi
             echo ""
         fi
