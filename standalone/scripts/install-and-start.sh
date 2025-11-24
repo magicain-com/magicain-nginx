@@ -249,32 +249,24 @@ if [ ! -f "docker-compose.yml" ]; then
     exit 1
 fi
 
-# 检查是否有运行中的容器
-RUNNING_CONTAINERS=$(docker compose ps -q 2>/dev/null | wc -l)
-if [ "$RUNNING_CONTAINERS" -gt 0 ]; then
-    echo -e "${YELLOW}检测到已运行的容器，将进行更新...${NC}"
-    echo -e "${BLUE}ℹ️  数据库和配置数据将被保留${NC}"
-    echo ""
-    echo "停止旧版本容器..."
-    docker compose down
-    echo ""
-    echo "使用新镜像重新创建并启动服务..."
-    if docker compose up -d; then
-        echo -e "${GREEN}✅ 服务更新成功${NC}"
-    else
-        echo -e "${RED}❌ 服务更新失败${NC}"
-        echo "查看日志: docker compose logs"
-        exit 1
-    fi
+echo "停止现有容器..."
+# 停止并移除容器、网络，保留数据卷
+# --remove-orphans 会清理掉不再 docker-compose.yml 中的旧服务容器
+docker compose down --remove-orphans
+
+echo ""
+echo "清理旧版本悬空镜像..."
+# 在步骤 4 加载新镜像后，旧的同名镜像会变为 <none> (dangling)，这里进行清理以释放空间
+docker image prune -f
+
+echo ""
+echo "启动 Docker Compose 服务..."
+if docker compose up -d; then
+    echo -e "${GREEN}✅ 服务启动成功${NC}"
 else
-    echo "启动 Docker Compose 服务..."
-    if docker compose up -d; then
-        echo -e "${GREEN}✅ 服务启动成功${NC}"
-    else
-        echo -e "${RED}❌ 服务启动失败${NC}"
-        echo "查看日志: docker compose logs"
-        exit 1
-    fi
+    echo -e "${RED}❌ 服务启动失败${NC}"
+    echo "查看日志: docker compose logs"
+    exit 1
 fi
 
 echo ""
