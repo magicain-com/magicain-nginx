@@ -13,6 +13,8 @@ data/
 
 # Docker images and infra packages
 standalone/docker/
+*.tar
+*.rpm
 
 # Temporary files
 *.tmp
