@@ -12,9 +12,9 @@ logs/
 data/
 
 # Docker images and infra packages
-standalone/docker/
-*.tar
-*.rpm
+# standalone/docker/ # Removed to allow LFS tracking
+# *.tar # Managed by LFS
+# *.rpm # Managed by LFS
 
 # Temporary files
 *.tmp
