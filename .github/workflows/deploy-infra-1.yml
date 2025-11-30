@@ -1,0 +1,53 @@
+name: Deploy infra-1
+
+on:
+  push:
+    tags:
+      - latest
+      - "*.*.*"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-infra-1
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Deploy to infra-1
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.INFRA1_HOST }}
+          username: ${{ secrets.INFRA1_SSH_USER }}
+          key: ${{ secrets.INFRA1_SSH_KEY }}
+          script: |
+            set -euo pipefail
+            REPO_URL="https://github.com/${{ github.repository }}.git"
+            DEPLOY_REF="${{ github.ref_name }}"
+            REPO_PATH="${{ secrets.INFRA1_REMOTE_PATH }}"
+            REPO_PATH="${REPO_PATH:-/opt/magicain}"
+
+            if [ ! -d "$REPO_PATH/.git" ]; then
+              sudo mkdir -p "$REPO_PATH"
+              sudo chown -R "$USER":"$USER" "$REPO_PATH"
+              git clone "$REPO_URL" "$REPO_PATH"
+            fi
+
+            cd "$REPO_PATH"
+            git fetch origin --tags
+            if git ls-remote --heads origin "$DEPLOY_REF" > /dev/null 2>&1; then
+              git fetch origin "$DEPLOY_REF"
+              git checkout "$DEPLOY_REF"
+              git reset --hard "origin/$DEPLOY_REF"
+            else
+              git checkout "$DEPLOY_REF"
+              git reset --hard "$DEPLOY_REF"
+            fi
+
+            docker compose -f docker-compose.infra-1.yml pull
+            docker compose -f docker-compose.infra-1.yml up -d --remove-orphans
+

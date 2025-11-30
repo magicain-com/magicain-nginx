@@ -1,0 +1,50 @@
+version: '3.8'
+
+services:
+  # Redis cache + session store (backend stack)
+  redis:
+    image: docker.m.daocloud.io/redis:7-alpine
+    restart: unless-stopped
+    command: >
+      redis-server --appendonly yes --requirepass ${REDIS_AUTH}
+    ports:
+      - "${REDIS_PORT}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - magicain-backend
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 3s
+      timeout: 10s
+      retries: 10
+
+  # Cloud backend service
+  cloud:
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:main
+    restart: unless-stopped
+    depends_on:
+      redis:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      POSTGRES_HOST: ${POSTGRES_HOST}
+      POSTGRES_PORT: ${POSTGRES_PORT}
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      REDIS_AUTH: ${REDIS_AUTH}
+      ELASTICSEARCH_HOST: ${ELASTICSEARCH_HOST}
+      ELASTICSEARCH_HTTP_PORT: ${ELASTICSEARCH_HTTP_PORT}
+    ports:
+      - "48080:48080"
+    networks:
+      - magicain-backend
+
+volumes:
+  redis_data:
+
+networks:
+  magicain-backend:
+    driver: bridge
+

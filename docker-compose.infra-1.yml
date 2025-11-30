@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  # PostgreSQL with PgVector (dedicated infra-1 server)
+  postgres:
+    image: docker.m.daocloud.io/pgvector/pgvector:pg16
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U magicain"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB}
+    ports:
+      - "${POSTGRES_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/init:/docker-entrypoint-initdb.d
+    networks:
+      - magicain-infra-1
+
+volumes:
+  postgres_data:
+
+networks:
+  magicain-infra-1:
+    driver: bridge
