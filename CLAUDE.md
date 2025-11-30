@@ -37,9 +37,9 @@ The system consists of the following components:
 
 The project supports multiple environments with different nginx configurations:
 
-- **Local development**: `conf/local.conf` - Routes to external dev servers
-- **Test environment**: `conf/test.conf` - Routes to test servers
-- **Production environment**: `conf/prod.conf` - SSL, load balancing, security headers
+- **Local development**: `config/nginx/local.conf` - Routes to external dev servers
+- **Test environment**: `config/nginx/test.conf` - Routes to test servers
+- **Production environment**: `config/nginx/prod.conf` - SSL, load balancing, security headers
 
 ## Service Endpoints
 
@@ -163,7 +163,7 @@ curl http://localhost:3000/api/public/metrics
 ### Configuration Changes
 
 **Nginx Configuration:**
-1. Modify files in `conf/` directory
+1. Modify files in `config/nginx/` directory
 2. Run `docker compose restart nginx-proxy`
 3. Check logs: `docker compose logs nginx-proxy`
 
