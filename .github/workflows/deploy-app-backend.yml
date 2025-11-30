@@ -19,6 +19,33 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
+      - name: Build deploy bundle
+        run: |
+          set -euo pipefail
+          rm -rf deploy_bundle deploy-bundle.tar.gz
+          mkdir -p deploy_bundle/config
+          if [ -z "${{ secrets.ENV_FILE }}" ]; then
+            echo "ENV_FILE secret is required" >&2
+            exit 1
+          fi
+          printf "%s" "${{ secrets.ENV_FILE }}" > deploy_bundle/.env
+          cp -R config/* deploy_bundle/config/
+          cp docker-compose.infra-1.yml deploy_bundle/
+          cp docker-compose.infra-2.yml deploy_bundle/
+          cp docker-compose.app-backend.yml deploy_bundle/
+          cp docker-compose.app-frontend.yml deploy_bundle/
+          tar czf deploy-bundle.tar.gz -C deploy_bundle .
+          rm -rf deploy_bundle
+
+      - name: Upload deploy bundle
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.APP_BACKEND_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: deploy-bundle.tar.gz
+          target: /tmp
+
       - name: Deploy to app-backend
         uses: appleboy/ssh-action@v1.0.0
         with:
@@ -27,28 +54,22 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           script: |
             set -euo pipefail
-            REPO_URL="https://github.com/${{ github.repository }}.git"
-            DEPLOY_REF="${{ github.ref_name }}"
-            REPO_PATH="${{ vars.APP_BACKEND_REMOTE_PATH }}"
-            REPO_PATH="${REPO_PATH:-/opt/magicain}"
+            TARGET_DIR="${{ vars.APP_BACKEND_REMOTE_PATH }}"
+            TARGET_DIR="${TARGET_DIR:-/opt/magicain}"
+            BUNDLE_TAR="/tmp/deploy-bundle.tar.gz"
 
-            if [ ! -d "$REPO_PATH/.git" ]; then
-              sudo mkdir -p "$REPO_PATH"
-              sudo chown -R "$USER":"$USER" "$REPO_PATH"
-              git clone "$REPO_URL" "$REPO_PATH"
-            fi
+            sudo mkdir -p "$TARGET_DIR"
+            sudo chown -R "$USER":"$USER" "$TARGET_DIR"
 
-            cd "$REPO_PATH"
-            git fetch origin --tags
-            if git ls-remote --heads origin "$DEPLOY_REF" > /dev/null 2>&1; then
-              git fetch origin "$DEPLOY_REF"
-              git checkout "$DEPLOY_REF"
-              git reset --hard "origin/$DEPLOY_REF"
+            if [ -f "$BUNDLE_TAR" ]; then
+              tar xzf "$BUNDLE_TAR" -C "$TARGET_DIR"
+              rm -f "$BUNDLE_TAR"
             else
-              git checkout "$DEPLOY_REF"
-              git reset --hard "$DEPLOY_REF"
+              echo "Deploy bundle not found at $BUNDLE_TAR" >&2
+              exit 1
             fi
 
+            cd "$TARGET_DIR"
             docker compose -f docker-compose.app-backend.yml pull
             docker compose -f docker-compose.app-backend.yml up -d --remove-orphans
 

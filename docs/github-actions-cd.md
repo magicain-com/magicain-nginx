@@ -14,11 +14,11 @@
 每个 Workflow 执行以下步骤：
 
 1. `actions/checkout` 拉取当前仓库。
-2. 通过 `appleboy/ssh-action` 登录目标 ECS。
-3. 若远端路径尚未 clone 仓库，则自动 `git clone https://github.com/jackjack-7/magicain-nginx.git`；否则根据当前触发的 **tag 或分支** 执行 `git fetch --tags` 并 checkout 对应提交。
-4. 在对应路径执行 `docker compose -f <compose> pull && docker compose -f <compose> up -d --remove-orphans`。
+2. 在构建机上将 `.env`（来自 `ENV_FILE` secret）与 `config/` 目录打包成 `config-bundle.tar.gz`。
+3. 通过 `appleboy/scp-action` 上传该 tar 包至目标 ECS。
+4. 通过 `appleboy/ssh-action` 登录目标 ECS，解压覆盖 `.env`/`config`，随后执行 `docker compose -f <compose> pull && docker compose -f <compose> up -d --remove-orphans`。
 
-这样可以保证每台机器上均部署最新代码，同时保留本地 `.env`、证书等敏感信息。
+这样可以保证每台机器的 `.env` 与配置文件保持最新，同时镜像依旧从 registry 拉取，本地仍可保留证书等敏感信息。
 
 ### 必需 Secrets
 
@@ -36,8 +36,9 @@
 | `APP_FRONTEND_REMOTE_PATH` | app-frontend 项目路径 |
 | `SSH_USER` | 四台服务器共用的 SSH 用户名 |
 | `SSH_KEY` | 四台服务器共用的私钥（PEM 文本） |
+| `ENV_FILE` | `.env` 文件的完整内容（多行字符串） |
 
-> 建议将 `*_HOST`/`*_REMOTE_PATH` 放在 **Actions Variables**，方便团队查看 IP；而 `SSH_USER`、`SSH_KEY` 等敏感信息继续使用 Secrets。
+> 建议将 `*_HOST`/`*_REMOTE_PATH` 放在 **Actions Variables**，方便团队查看 IP；而 `SSH_USER`、`SSH_KEY`、`ENV_FILE` 等敏感信息继续使用 Secrets。
 
 ### 触发方式
 
@@ -57,6 +58,7 @@
    docker compose -f docker-compose.infra-1.yml up -d
    ```
    后续 GitHub Actions 会自动更新同一路径。
+4. **重要**：当前 workflow 只覆盖 `.env` 与 `config/`，不会再次 `git pull`，因此首次部署时需手动将仓库拷贝到 `*_REMOTE_PATH`。
 
 如需扩展到更多服务器，只需拷贝现有 workflow，替换 compose 文件与 secrets 名称即可。
 
