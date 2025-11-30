@@ -14,6 +14,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,14 +22,14 @@ jobs:
       - name: Deploy to infra-2
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.INFRA2_HOST }}
-          username: ${{ secrets.INFRA2_SSH_USER }}
-          key: ${{ secrets.INFRA2_SSH_KEY }}
+          host: ${{ vars.INFRA2_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             set -euo pipefail
             REPO_URL="https://github.com/${{ github.repository }}.git"
             DEPLOY_REF="${{ github.ref_name }}"
-            REPO_PATH="${{ secrets.INFRA2_REMOTE_PATH }}"
+            REPO_PATH="${{ vars.INFRA2_REMOTE_PATH }}"
             REPO_PATH="${REPO_PATH:-/opt/magicain}"
 
             if [ ! -d "$REPO_PATH/.git" ]; then

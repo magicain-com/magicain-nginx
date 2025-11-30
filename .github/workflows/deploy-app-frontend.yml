@@ -14,6 +14,7 @@ concurrency:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment: prod
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -21,14 +22,14 @@ jobs:
       - name: Deploy to app-frontend
         uses: appleboy/ssh-action@v1.0.0
         with:
-          host: ${{ secrets.APP_FRONTEND_HOST }}
-          username: ${{ secrets.APP_FRONTEND_SSH_USER }}
-          key: ${{ secrets.APP_FRONTEND_SSH_KEY }}
+          host: ${{ vars.APP_FRONTEND_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             set -euo pipefail
             REPO_URL="https://github.com/${{ github.repository }}.git"
             DEPLOY_REF="${{ github.ref_name }}"
-            REPO_PATH="${{ secrets.APP_FRONTEND_REMOTE_PATH }}"
+            REPO_PATH="${{ vars.APP_FRONTEND_REMOTE_PATH }}"
             REPO_PATH="${REPO_PATH:-/opt/magicain}"
 
             if [ ! -d "$REPO_PATH/.git" ]; then

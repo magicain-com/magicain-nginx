@@ -26,24 +26,18 @@
 
 | Secret | 用途 |
 | --- | --- |
-| `INFRA1_HOST` | infra-1 公网或私网可达 IP |
-| `INFRA1_SSH_USER` | 登入用户名（建议使用拥有 Docker 权限的非 root 用户） |
-| `INFRA1_SSH_KEY` | 对应用户的私钥（PEM 文本） |
+| `INFRA1_HOST` | infra-1 公网或私网可达 IP（建议放在仓库 Variables） |
 | `INFRA1_REMOTE_PATH` | 服务器上的项目路径（如 `/opt/magicain`） |
 | `INFRA2_HOST` | infra-2 IP |
-| `INFRA2_SSH_USER` | infra-2 用户名 |
-| `INFRA2_SSH_KEY` | infra-2 SSH 私钥 |
 | `INFRA2_REMOTE_PATH` | infra-2 项目路径 |
 | `APP_BACKEND_HOST` | app-backend IP |
-| `APP_BACKEND_SSH_USER` | app-backend 用户名 |
-| `APP_BACKEND_SSH_KEY` | app-backend SSH 私钥 |
 | `APP_BACKEND_REMOTE_PATH` | app-backend 项目路径 |
 | `APP_FRONTEND_HOST` | app-frontend IP |
-| `APP_FRONTEND_SSH_USER` | app-frontend 用户名 |
-| `APP_FRONTEND_SSH_KEY` | app-frontend SSH 私钥 |
 | `APP_FRONTEND_REMOTE_PATH` | app-frontend 项目路径 |
+| `SSH_USER` | 四台服务器共用的 SSH 用户名 |
+| `SSH_KEY` | 四台服务器共用的私钥（PEM 文本） |
 
-> 如果 4 台服务器的用户名 / 私钥一致，也可以在仓库级别设置 [Variables](https://docs.github.com/actions/learn-github-actions/variables) 并在 Secrets 中引用，便于集中管理。
+> 建议将 `*_HOST`/`*_REMOTE_PATH` 放在 **Actions Variables**，方便团队查看 IP；而 `SSH_USER`、`SSH_KEY` 等敏感信息继续使用 Secrets。
 
 ### 触发方式
 
