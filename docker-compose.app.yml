@@ -49,6 +49,8 @@ services:
     image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/code-interpreter:main
     ports:
       - "5007:5007"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - magicain-app
     restart: unless-stopped
