@@ -70,9 +70,7 @@ jobs:
             fi
 
             cd "$TARGET_DIR"
-            if [ -n "${{ secrets.DOCKER_REGISTRY }}" ]; then
-              echo "${{ secrets.DOCKER_REGISTRY_PASSWORD }}" | docker login "${{ secrets.DOCKER_REGISTRY }}" -u "${{ secrets.DOCKER_REGISTRY_USER }}" --password-stdin
-            fi
+            echo "${{ secrets.DOCKER_REGISTRY_PASSWORD }}" | docker login "${{ secrets.DOCKER_REGISTRY }}" -u "${{ secrets.DOCKER_REGISTRY_USER }}" --password-stdin
             docker compose -f docker-compose.app-frontend.yml pull
             docker compose -f docker-compose.app-frontend.yml up -d --remove-orphans
 
