@@ -52,6 +52,7 @@ jobs:
           fi
 
           cp -R config/* deploy_bundle/config/
+          cp Dockerfile deploy_bundle/
           cp docker-compose.infra-1.yml deploy_bundle/
           cp docker-compose.infra-2.yml deploy_bundle/
           cp docker-compose.app-backend.yml deploy_bundle/
