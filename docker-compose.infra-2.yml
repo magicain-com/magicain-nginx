@@ -10,8 +10,8 @@ services:
       - xpack.security.enabled=false
       - xpack.security.enrollment.enabled=false
     ports:
-      - "${ELASTICSEARCH_HTTP_PORT}:9200"
-      - "${ELASTICSEARCH_TCP_PORT}:9300"
+      - "9200:9200"
+      - "9300:9300"
     volumes:
       - es_data:/usr/share/elasticsearch/data
     networks:

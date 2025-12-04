@@ -8,7 +8,7 @@ services:
     command: >
       redis-server --appendonly yes --requirepass ${REDIS_AUTH}
     ports:
-      - "${REDIS_PORT}:6379"
+      - "6379:6379"
     volumes:
       - redis_data:/data
     networks:
@@ -18,6 +18,15 @@ services:
       interval: 3s
       timeout: 10s
       retries: 10
+
+  # Code Intepreter
+  code-interpreter:
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/code-interpreter:main
+    restart: unless-stopped
+    ports:
+      - "5007:5007"
+    networks:
+      - magicain-backend
 
   # Cloud backend service
   cloud:
