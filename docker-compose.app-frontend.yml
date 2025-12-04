@@ -5,7 +5,7 @@ services:
   nginx-proxy:
     build: .
     ports:
-      - "${NGINX_PORT}:80"
+      - "80:80"
       - 443:443
     networks:
       - magicain-frontend
@@ -13,9 +13,7 @@ services:
     volumes:
       - ./logs/nginx:/var/log/nginx
       - ${NGINX_CONFIG_FILE}:/etc/nginx/nginx.conf
-      - ./cert:/etc/nginx/cert:ro
-      - /work/general-app/dist:/usr/share/nginx/html/app
-      - /work/magicain-admin-ui/dist:/usr/share/nginx/html/admin
+      - ${NGINX_CERT_PATH}:/etc/nginx/cert:ro
   
   # Admin UI Frontend
   admin-ui:

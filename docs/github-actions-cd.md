@@ -14,9 +14,10 @@
 每个 Workflow 执行以下步骤：
 
 1. `actions/checkout` 拉取当前仓库。
-2. 在构建机上将 `.env`（来自 `ENV_FILE` secret）与 `config/` 目录打包成 `config-bundle.tar.gz`。
+2. 在构建机上将匹配 `.env*` 的文件与 `config/` 目录、相关 `docker-compose.*.yml` 打包成 `deploy-bundle.tar.gz`。  
+   - Workflow 会根据 `job.environment.name` 自动设置 `ENV_FILE_NAME`，默认为 `.env.<environment>`（如 prod → `.env.prod`）。若环境名为空，则回退到 `.env`。
 3. 通过 `appleboy/scp-action` 上传该 tar 包至目标 ECS。
-4. 通过 `appleboy/ssh-action` 登录目标 ECS，解压覆盖 `.env`/`config`，随后执行 `docker compose -f <compose> pull && docker compose -f <compose> up -d --remove-orphans`。
+4. 通过 `appleboy/ssh-action` 登录目标 ECS，解压后把指定的 `.env.*` 覆盖为 `.env`，随后执行 `docker compose -f <compose> pull && docker compose -f <compose> up -d --remove-orphans`。
 
 这样可以保证每台机器的 `.env` 与配置文件保持最新，同时镜像依旧从 registry 拉取，本地仍可保留证书等敏感信息。
 
@@ -36,9 +37,12 @@
 | `APP_FRONTEND_REMOTE_PATH` | app-frontend 项目路径 |
 | `SSH_USER` | 四台服务器共用的 SSH 用户名 |
 | `SSH_KEY` | 四台服务器共用的私钥（PEM 文本） |
-| `ENV_FILE` | `.env` 文件的完整内容（多行字符串） |
+| `DOCKER_REGISTRY` | Docker 镜像仓库地址 |
+| `DOCKER_REGISTRY_USER` | 仓库用户名 |
+| `DOCKER_REGISTRY_PASSWORD` | 仓库密码 |
 
-> 建议将 `*_HOST`/`*_REMOTE_PATH` 放在 **Actions Variables**，方便团队查看 IP；而 `SSH_USER`、`SSH_KEY`、`ENV_FILE` 等敏感信息继续使用 Secrets。
+> 建议将 `*_HOST`/`*_REMOTE_PATH` 放在 **Actions Variables**，方便团队查看 IP；而 `SSH_USER`、`SSH_KEY`、`DOCKER_REGISTRY_*` 等敏感信息继续使用 Secrets。`ENV_FILE_NAME` 由 workflow 自动推导，通常无需手动设置。
+
 
 ### 触发方式
 

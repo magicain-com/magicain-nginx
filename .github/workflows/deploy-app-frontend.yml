@@ -15,6 +15,8 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: prod
+    env:
+      ENV_FILE_NAME: ${{ job.environment.name != '' && format('.env.{0}', job.environment.name) || '.env' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -24,11 +26,31 @@ jobs:
           set -euo pipefail
           rm -rf deploy_bundle deploy-bundle.tar.gz
           mkdir -p deploy_bundle/config
-          if [ -z "${{ secrets.ENV_FILE }}" ]; then
-            echo "ENV_FILE secret is required" >&2
+          ENV_FILE_NAME="${ENV_FILE_NAME:-.env}"
+
+          shopt -s nullglob
+          ENV_FILES=( ./.env* )
+          shopt -u nullglob
+
+          if [ ${#ENV_FILES[@]} -eq 0 ]; then
+            echo "❌ No .env* files found in repository root." >&2
             exit 1
           fi
-          printf "%s" "${{ secrets.ENV_FILE }}" > deploy_bundle/.env
+
+          FOUND_ENV=false
+          for file in "${ENV_FILES[@]}"; do
+            base="$(basename "$file")"
+            cp "$file" "deploy_bundle/$base"
+            if [ "$base" = "$ENV_FILE_NAME" ]; then
+              FOUND_ENV=true
+            fi
+          done
+
+          if [ "$FOUND_ENV" = false ]; then
+            echo "❌ Required environment file $ENV_FILE_NAME not found." >&2
+            exit 1
+          fi
+
           cp -R config/* deploy_bundle/config/
           cp docker-compose.infra-1.yml deploy_bundle/
           cp docker-compose.infra-2.yml deploy_bundle/
@@ -70,6 +92,13 @@ jobs:
             fi
 
             cd "$TARGET_DIR"
+            ENV_FILE_NAME="${ENV_FILE_NAME:-.env}"
+            if [ -f "$TARGET_DIR/$ENV_FILE_NAME" ]; then
+              cp "$TARGET_DIR/$ENV_FILE_NAME" "$TARGET_DIR/.env"
+            else
+              echo "Required environment file $ENV_FILE_NAME missing after extraction." >&2
+              exit 1
+            fi
             echo "${{ secrets.DOCKER_REGISTRY_PASSWORD }}" | docker login "${{ secrets.DOCKER_REGISTRY }}" -u "${{ secrets.DOCKER_REGISTRY_USER }}" --password-stdin
             docker compose -f docker-compose.app-frontend.yml pull
             docker compose -f docker-compose.app-frontend.yml up -d --remove-orphans
