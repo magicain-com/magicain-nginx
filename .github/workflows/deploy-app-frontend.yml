@@ -15,17 +15,11 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: prod
+    env:
+      ENV_FILE_NAME: .env.prod
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-
-      - name: Resolve env file name
-        run: |
-          if [ -n "${{ job.environment && job.environment.name || '' }}" ]; then
-            echo "ENV_FILE_NAME=.env.${{ job.environment.name }}" >> $GITHUB_ENV
-          else
-            echo "ENV_FILE_NAME=.env" >> $GITHUB_ENV
-          fi
 
       - name: Build deploy bundle
         run: |
@@ -85,6 +79,7 @@ jobs:
             TARGET_DIR="${{ vars.APP_FRONTEND_REMOTE_PATH }}"
             TARGET_DIR="${TARGET_DIR:-/opt/magicain}"
             BUNDLE_TAR="/tmp/deploy-bundle.tar.gz"
+            ENV_FILE_NAME="${{ env.ENV_FILE_NAME }}"
 
             sudo mkdir -p "$TARGET_DIR"
             sudo chown -R "$USER":"$USER" "$TARGET_DIR"
@@ -98,12 +93,16 @@ jobs:
             fi
 
             cd "$TARGET_DIR"
-            ENV_FILE_NAME="${ENV_FILE_NAME:-.env}"
-            if [ -f "$TARGET_DIR/$ENV_FILE_NAME" ]; then
-              cp "$TARGET_DIR/$ENV_FILE_NAME" "$TARGET_DIR/.env"
+            # Only copy if the source and destination are different files
+            if [ "$ENV_FILE_NAME" != ".env" ]; then
+              if [ -f "$ENV_FILE_NAME" ]; then
+                cp "$ENV_FILE_NAME" .env
+              else
+                echo "Required environment file $ENV_FILE_NAME missing after extraction." >&2
+                exit 1
+              fi
             else
-              echo "Required environment file $ENV_FILE_NAME missing after extraction." >&2
-              exit 1
+              echo "Using .env directly (no copy needed)"
             fi
             echo "${{ secrets.DOCKER_REGISTRY_PASSWORD }}" | docker login "${{ secrets.DOCKER_REGISTRY }}" -u "${{ secrets.DOCKER_REGISTRY_USER }}" --password-stdin
             docker compose -f docker-compose.app-frontend.yml pull
