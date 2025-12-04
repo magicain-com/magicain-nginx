@@ -15,11 +15,17 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     environment: prod
-    env:
-      ENV_FILE_NAME: ${{ job.environment.name != '' && format('.env.{0}', job.environment.name) || '.env' }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Resolve env file name
+        run: |
+          if [ -n "${{ job.environment && job.environment.name || '' }}" ]; then
+            echo "ENV_FILE_NAME=.env.${{ job.environment.name }}" >> $GITHUB_ENV
+          else
+            echo "ENV_FILE_NAME=.env" >> $GITHUB_ENV
+          fi
 
       - name: Build deploy bundle
         run: |
