@@ -1,6 +1,4 @@
-FROM m.daocloud.io/docker.io/nginx:latest
-
-COPY config/nginx/local.conf /etc/nginx/nginx.conf
+FROM crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/nginx:1.28-alpine
 
 EXPOSE 80
 
