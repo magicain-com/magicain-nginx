@@ -25,7 +25,7 @@ jobs:
         run: |
           set -euo pipefail
           rm -rf deploy_bundle deploy-bundle.tar.gz
-          mkdir -p deploy_bundle/config
+          mkdir -p deploy_bundle/config deploy_bundle/cert
           ENV_FILE_NAME="${ENV_FILE_NAME:-.env}"
 
           shopt -s nullglob
@@ -52,6 +52,13 @@ jobs:
           fi
 
           cp -R config/* deploy_bundle/config/
+          mkdir -p deploy_bundle/config/nginx/cert
+          if [ -z "${{ secrets.MAGICAIN_CERT_KEY }}" ] || [ -z "${{ secrets.MAGICAIN_CERT_PEM }}" ]; then
+            echo "❌ MAGICAIN_CERT_KEY and MAGICAIN_CERT_PEM secrets must be set." >&2
+            exit 1
+          fi
+          printf "%s" "${{ secrets.MAGICAIN_CERT_KEY }}" > deploy_bundle/config/nginx/cert/magicain.com.key
+          printf "%s" "${{ secrets.MAGICAIN_CERT_PEM }}" > deploy_bundle/config/nginx/cert/magicain.com.pem
           cp Dockerfile deploy_bundle/
           cp docker-compose.infra-1.yml deploy_bundle/
           cp docker-compose.infra-2.yml deploy_bundle/

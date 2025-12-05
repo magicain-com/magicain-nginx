@@ -40,6 +40,8 @@
 | `DOCKER_REGISTRY` | Docker 镜像仓库地址 |
 | `DOCKER_REGISTRY_USER` | 仓库用户名 |
 | `DOCKER_REGISTRY_PASSWORD` | 仓库密码 |
+| `MAGICAIN_CERT_KEY` | Nginx 证书私钥内容（写入 `config/nginx/cert/magicain.com.key`） |
+| `MAGICAIN_CERT_PEM` | Nginx 证书链内容（写入 `config/nginx/cert/magicain.com.pem`） |
 
 > 建议将 `*_HOST`/`*_REMOTE_PATH` 放在 **Actions Variables**，方便团队查看 IP；而 `SSH_USER`、`SSH_KEY`、`DOCKER_REGISTRY_*` 等敏感信息继续使用 Secrets。`ENV_FILE_NAME` 由 workflow 自动推导，通常无需手动设置。
 
