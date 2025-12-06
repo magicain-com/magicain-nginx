@@ -1,4 +1,4 @@
-name: Deploy app-frontend refresh
+name: Deploy app-frontend clean
 
 on:
   push:
