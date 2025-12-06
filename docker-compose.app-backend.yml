@@ -25,6 +25,8 @@ services:
     restart: unless-stopped
     ports:
       - "5007:5007"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - magicain-backend
 
@@ -39,6 +41,8 @@ services:
       SPRING_PROFILES_ACTIVE: prod
     ports:
       - "48080:48080"
+    volumes:
+      - ./logs/cloud:/var/log/cloud
     networks:
       - magicain-backend
 
