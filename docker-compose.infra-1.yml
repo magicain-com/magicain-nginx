@@ -24,6 +24,11 @@ services:
 
 volumes:
   postgres_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/postgres
 
 networks:
   magicain-infra-1:
