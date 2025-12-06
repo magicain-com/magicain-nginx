@@ -1,4 +1,4 @@
-name: Deploy infra-2
+name: Deploy infra-2 fresh
 
 on:
   push:
