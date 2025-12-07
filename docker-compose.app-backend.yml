@@ -42,7 +42,7 @@ services:
     ports:
       - "48080:48080"
     volumes:
-      - /var/log/cloud:/var/log/cloud
+      - ./logs/cloud:/root/logs
     networks:
       - magicain-backend
 
