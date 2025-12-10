@@ -36,23 +36,19 @@ This project provides a complete development and production environment includin
    ```
 
 3. **Start your development servers（IDE / 本地进程）**
-   - Admin frontend：端口 8080，与 `local.conf` 中 `/admin` 对应
-   - Agent frontend：端口 8081，对应 `/agent`
-   - Chat frontend：端口 8082，对应 `/c/`（可在 `config/nginx/local.conf` 调整）
-   - Java backend：端口 8080，提供 `/api`、`/admin-api`
+   - Admin frontend：端口 8080，对应 `/admin/`
+   - Agent frontend：端口 8081，对应 `/agent/`
+   - Chat frontend：端口 8082，对应 `/c/`
+   - Java backend：端口 48080，提供 `/api/`、`/admin-api/`
    
-   > ⚠️ **注意**：`config/nginx/local.conf` 假设这些端口配置如上。如果你在 IDE 中修改了端口或 context path，务必同步更新 nginx 配置中的 `proxy_pass` 目标，避免路由失败。
+   `config/nginx/local.conf` proxies to `host.docker.internal` on上述端口；如需改端口，请同步修改该文件的 upstream 配置。
 
-4. **Access your applications via nginx:**
-   - **Admin:** http://localhost/admin/
-   - **Agent:** http://localhost/agent/
-   - **Chat:** http://localhost/chat/
-   - **Agent UI:** http://localhost:8001/ (containerized frontend)
-   - **Admin API:** http://localhost/admin-api/
-   - **General API:** http://localhost/api/
-   - **Grafana:** http://localhost:3001/ (admin/admin123)
-   - **Langfuse:** http://localhost:3000/
-   - **Prometheus:** http://localhost:9090/
+4. **Access via local nginx** (after `./scripts/start-local.sh`):
+   - **Admin:** http://localhost/admin/  → 前端 8080
+   - **Agent:** http://localhost/agent/  → 前端 8081
+   - **Chat:** http://localhost/c/      → 前端 8082
+   - **Cloud API:** http://localhost/api/    → 后端 48080
+   - **Cloud Admin API:** http://localhost/admin-api/ → 后端 48080
 
 ### Quick nginx-only preview
 
