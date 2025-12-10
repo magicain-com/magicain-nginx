@@ -35,33 +35,15 @@ This project provides a complete development and production environment includin
    # Edit .env with your Docker registry credentials if using private images
    ```
 
-3. **Start all services (recommended method):**
-   ```bash
-   ./scripts/start-dev.sh
-   ```
+3. **Start your development servers（IDE / 本地进程）**
+   - Admin frontend：端口 8080，与 `local.conf` 中 `/admin` 对应
+   - Agent frontend：端口 8081，对应 `/agent`
+   - Chat frontend：端口 8082，对应 `/c/`（可在 `config/nginx/local.conf` 调整）
+   - Java backend：端口 8080，提供 `/api`、`/admin-api`
    
-   **Or manually:**
-   ```bash
-   # Login to Docker registry (if needed)
-   ./scripts/docker-login.sh
-   
-   # Start services
-   docker compose up -d
-   ```
+   > ⚠️ **注意**：`config/nginx/local.conf` 假设这些端口配置如上。如果你在 IDE 中修改了端口或 context path，务必同步更新 nginx 配置中的 `proxy_pass` 目标，避免路由失败。
 
-3. **Wait for services to initialize (check logs):**
-   ```bash
-   docker compose logs -f postgres
-   # Wait for "database system is ready to accept connections"
-   ```
-
-4. **Start your development servers (optional - for external development):**
-   - Admin frontend on port 8080 with base path `/admin`
-   - Agent frontend on port 8081 with base path `/agent`  
-   - Chat frontend on port 8082 with base path `/chat`
-   - Java backend on port 8080 (or use the containerized version)
-
-5. **Access your applications:**
+4. **Access your applications via nginx:**
    - **Admin:** http://localhost/admin/
    - **Agent:** http://localhost/agent/
    - **Chat:** http://localhost/chat/
@@ -71,6 +53,17 @@ This project provides a complete development and production environment includin
    - **Grafana:** http://localhost:3001/ (admin/admin123)
    - **Langfuse:** http://localhost:3000/
    - **Prometheus:** http://localhost:9090/
+
+### Quick nginx-only preview
+
+若只需快速验证 nginx 路由，可直接使用仓库根目录的 `Dockerfile`：
+
+```bash
+./scripts/start-local.sh              # 默认暴露 http://localhost:8080
+HOST_PORT=8001 ./scripts/start-local.sh   # 自定义对外端口
+```
+
+脚本会删除历史容器/镜像 → 构建 `magicain-nginx-local` 镜像 → 启动单个 nginx 容器，便于本地调试。
 
 ### Test Environment Setup
 
