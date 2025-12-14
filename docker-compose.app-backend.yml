@@ -19,17 +19,6 @@ services:
       timeout: 10s
       retries: 10
 
-  # Code Intepreter
-  code-interpreter:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/code-interpreter:main
-    restart: unless-stopped
-    ports:
-      - "5007:5007"
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-    networks:
-      - magicain-backend
-
   # Cloud backend service
   cloud:
     image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:main

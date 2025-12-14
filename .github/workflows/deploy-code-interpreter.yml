@@ -1,0 +1,103 @@
+name: Deploy code-interpreter
+
+on:
+  push:
+    tags:
+      - latest
+      - "*.*.*"
+  workflow_dispatch:
+
+concurrency:
+  group: deploy-code-interpreter
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment: prod
+    env:
+      ENV_FILE_NAME: .env.prod
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build deploy bundle
+        run: |
+          set -euo pipefail
+          rm -rf deploy_bundle deploy-bundle.tar.gz
+          mkdir -p deploy_bundle/config
+          ENV_FILE_NAME="${ENV_FILE_NAME:-.env}"
+
+          shopt -s nullglob
+          ENV_FILES=( ./.env* )
+          shopt -u nullglob
+
+          if [ ${#ENV_FILES[@]} -eq 0 ]; then
+            echo "❌ No .env* files found in repository root." >&2
+            exit 1
+          fi
+
+          FOUND_ENV=false
+          for file in "${ENV_FILES[@]}"; do
+            base="$(basename "$file")"
+            cp "$file" "deploy_bundle/$base"
+            if [ "$base" = "$ENV_FILE_NAME" ]; then
+              FOUND_ENV=true
+            fi
+          done
+
+          if [ "$FOUND_ENV" = false ]; then
+            echo "❌ Required environment file $ENV_FILE_NAME not found." >&2
+            exit 1
+          fi
+
+          cp -R config/* deploy_bundle/config/ 2>/dev/null || true
+          cp docker-compose.code-interpreter.yml deploy_bundle/
+          tar czf deploy-bundle.tar.gz -C deploy_bundle .
+          rm -rf deploy_bundle
+
+      - name: Upload deploy bundle
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ vars.APP_BACKEND_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          source: deploy-bundle.tar.gz
+          target: /tmp
+
+      - name: Deploy to backend (code-interpreter)
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ vars.APP_BACKEND_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -euo pipefail
+            TARGET_DIR="${{ vars.APP_BACKEND_REMOTE_PATH }}"
+            TARGET_DIR="${TARGET_DIR:-/opt/magicain}"
+            BUNDLE_TAR="/tmp/deploy-bundle.tar.gz"
+            ENV_FILE_NAME="${ENV_FILE_NAME:-.env.prod}"
+
+            sudo mkdir -p "$TARGET_DIR"
+            sudo chown -R "$USER":"$USER" "$TARGET_DIR"
+
+            if [ -f "$BUNDLE_TAR" ]; then
+              tar xzf "$BUNDLE_TAR" -C "$TARGET_DIR"
+              rm -f "$BUNDLE_TAR"
+            else
+              echo "Deploy bundle not found at $BUNDLE_TAR" >&2
+              exit 1
+            fi
+
+            cd "$TARGET_DIR"
+            if [ -f "$ENV_FILE_NAME" ]; then
+              cp "$ENV_FILE_NAME" .env
+            else
+              echo "Required environment file $ENV_FILE_NAME missing after extraction." >&2
+              exit 1
+            fi
+
+            echo "${{ secrets.DOCKER_REGISTRY_PASSWORD }}" | docker login "${{ secrets.DOCKER_REGISTRY }}" -u "${{ secrets.DOCKER_REGISTRY_USER }}" --password-stdin
+            docker compose -f docker-compose.code-interpreter.yml pull
+            docker compose -f docker-compose.code-interpreter.yml up -d --remove-orphans
+
