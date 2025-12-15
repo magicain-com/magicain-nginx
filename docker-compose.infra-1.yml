@@ -32,4 +32,5 @@ volumes:
 
 networks:
   magicain-infra-1:
+    name: magicain-infra-1
     driver: bridge

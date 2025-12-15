@@ -197,4 +197,5 @@ services:
 
 networks:
   magicain-frontend:
+    name: magicain-frontend
     driver: bridge
