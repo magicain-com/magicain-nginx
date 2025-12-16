@@ -261,7 +261,7 @@ docker image prune -f
 
 echo ""
 echo "启动 Docker Compose 服务..."
-if docker compose up -d; then
+if docker compose up -d --force-recreate; then
     echo -e "${GREEN}✅ 服务启动成功${NC}"
 else
     echo -e "${RED}❌ 服务启动失败${NC}"

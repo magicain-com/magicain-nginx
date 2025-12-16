@@ -27,7 +27,8 @@ services:
       redis:
         condition: service_healthy
     environment:
-      SPRING_PROFILES_ACTIVE: prod
+      - SPRING_PROFILES_ACTIVE: prod
+      - CODING_BASE_URL=http://jupyter-code-interpreter:5007
     ports:
       - "48080:48080"
     volumes:
