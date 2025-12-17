@@ -61,11 +61,10 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER set_update_time
+CREATE TRIGGER set_update_time_aibi_app
     BEFORE UPDATE ON aibi_app
     FOR EACH ROW
     EXECUTE FUNCTION update_modified_column();
-
 
 CREATE TABLE aibi_app_config (
                                  id BIGINT NOT NULL PRIMARY KEY, -- 主键
@@ -120,7 +119,7 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER set_update_time
+CREATE TRIGGER set_update_time_aibi_app_config
     BEFORE UPDATE ON aibi_app_config
     FOR EACH ROW
     EXECUTE FUNCTION update_timestamp();
@@ -165,7 +164,7 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER set_update_time
+CREATE TRIGGER set_update_time_aibi_app_dataset_relation
     BEFORE UPDATE ON aibi_app_dataset_relation
     FOR EACH ROW
     EXECUTE FUNCTION update_timestamp();
@@ -214,7 +213,7 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER set_update_time
+CREATE TRIGGER set_update_time_aibi_dataset_datasource_relation
     BEFORE UPDATE ON aibi_dataset_datasource_relation
     FOR EACH ROW
     EXECUTE FUNCTION update_timestamp();
@@ -267,7 +266,7 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER set_update_time
+CREATE TRIGGER set_update_time_aibi_dataset_table_relation
     BEFORE UPDATE ON aibi_dataset_table_relation
     FOR EACH ROW
     EXECUTE FUNCTION update_timestamp();
@@ -313,7 +312,7 @@ CREATE SEQUENCE aibi_dataset_seq
     START 1;
 
 -- 创建触发函数，用于自动更新 update_time
-CREATE OR REPLACE FUNCTION update_update_time()
+CREATE OR REPLACE FUNCTION update_time_aibi_dataset()
 RETURNS TRIGGER AS $$
 BEGIN
     NEW.update_time = CURRENT_TIMESTAMP;
@@ -322,10 +321,10 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- 创建触发器，在每次更新表时自动触发
-CREATE TRIGGER trg_update_update_time
+CREATE TRIGGER trg_update_update_time_aibi_dataset
     BEFORE UPDATE ON aibi_dataset
     FOR EACH ROW
-    EXECUTE FUNCTION update_update_time();
+    EXECUTE FUNCTION update_time_aibi_dataset();
 
 
 -- 创建表
@@ -723,10 +722,10 @@ CREATE SEQUENCE aibi_skill_relation_seq
     START 1;
 
 -- 索引
-CREATE INDEX idx_search
+CREATE INDEX idx_tenant_app_skill_id
     ON aibi_skill_relation (tenant_id, app_id, skill_id, deleted);
 
-CREATE INDEX idx_search_reverse
+CREATE INDEX idx_tenant_app_skill_id_relate
     ON aibi_skill_relation (tenant_id, app_id, related_id, relate_type, deleted);
 
 -- 触发器函数：自动更新时间
@@ -791,7 +790,7 @@ CREATE SEQUENCE aibi_skill_seq
     START 1;
 
 -- 索引
-CREATE INDEX idx_search
+CREATE INDEX idx_tenant_app_skill_code
     ON aibi_skill (tenant_id, app_id, skill_code, deleted);
 
 -- 触发器函数：自动更新时间
@@ -979,7 +978,7 @@ CREATE INDEX idx_tenant_id ON aibi_chat_message(tenant_id);
 CREATE INDEX idx_session_id ON aibi_chat_message(session_id);
 CREATE INDEX idx_msg_trace_id ON aibi_chat_message(msg_trace_id);
 CREATE INDEX idx_status ON aibi_chat_message(status);
-CREATE INDEX idx_create_time ON aibi_chat_message(create_time);
+CREATE INDEX idx_acm_create_time ON aibi_chat_message(create_time);
 CREATE INDEX idx_sender_id ON aibi_chat_message(sender_id);
 CREATE INDEX idx_creator ON aibi_chat_message(creator);
 
@@ -1034,7 +1033,7 @@ COMMENT ON COLUMN aibi_chat_session.deleted IS '软删除标识：0-未删除，
 CREATE INDEX idx_tenant_session ON aibi_chat_session(tenant_id);
 CREATE INDEX idx_user_id ON aibi_chat_session(user_id);
 CREATE INDEX idx_assistant_id ON aibi_chat_session(assistant_id);
-CREATE INDEX idx_create_time ON aibi_chat_session(create_time);
+CREATE INDEX idx_acs_create_time ON aibi_chat_session(create_time);
 CREATE INDEX idx_deleted ON aibi_chat_session(deleted);
 
 DROP SEQUENCE IF EXISTS aibi_chat_session_seq;
@@ -1383,7 +1382,7 @@ CREATE SEQUENCE chat_ai_vector_seq
 -- ============================
 -- 自动更新时间戳功能
 -- ============================
-CREATE OR REPLACE FUNCTION update_modified_column()
+CREATE OR REPLACE FUNCTION update_update_time_chat_ai_vector()
 RETURNS TRIGGER AS $$
 BEGIN
    NEW.update_time = now();
@@ -1391,7 +1390,185 @@ RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER set_update_time
-    BEFORE UPDATE ON aibi_app
+CREATE TRIGGER trg_update_update_time_chat_ai_vector
+    BEFORE UPDATE ON chat_ai_vector
     FOR EACH ROW
-    EXECUTE FUNCTION update_modified_column();
+    EXECUTE FUNCTION update_update_time_chat_ai_vector();
+
+
+-- Table: agent_plan_sop
+-- Description: agent规划sop
+
+CREATE TABLE agent_plan_sop (
+                                id              BIGSERIAL PRIMARY KEY, -- 主键
+                                create_time     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                                update_time     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 更新时间 (PostgreSQL 不支持 ON UPDATE CURRENT_TIMESTAMP，需用触发器实现，此处仅设默认值)
+                                creator         VARCHAR(64) DEFAULT '', -- 创建者
+                                updater         VARCHAR(64) DEFAULT '', -- 更新者
+                                deleted         SMALLINT DEFAULT 0, -- 是否删除：0否，1是 (PostgreSQL 常用 SMALLINT 或 BOOLEAN)
+                                tenant_id       BIGINT, -- 租户ID
+                                agent_id        VARCHAR(64), -- 归属的agent, 确定作用的scope, 可能是agent也可能是子agent
+                                sop_name        VARCHAR(64), -- sop的名字
+                                sop_desc        VARCHAR(512), -- sop的描述
+                                content         TEXT -- sop内容 (PostgreSQL 中 TEXT 没有长度限制，相当于 MySQL 的 LONGTEXT)
+);
+
+-- 添加注释
+COMMENT ON TABLE agent_plan_sop IS 'agent规划sop';
+COMMENT ON COLUMN agent_plan_sop.id IS '主键';
+COMMENT ON COLUMN agent_plan_sop.create_time IS '创建时间';
+COMMENT ON COLUMN agent_plan_sop.update_time IS '更新时间'; -- 注意：PostgreSQL 不支持列级别的自动更新时间戳，需用触发器
+COMMENT ON COLUMN agent_plan_sop.creator IS '创建者';
+COMMENT ON COLUMN agent_plan_sop.updater IS '更新者';
+COMMENT ON COLUMN agent_plan_sop.deleted IS '是否删除：0否，1是';
+COMMENT ON COLUMN agent_plan_sop.tenant_id IS '租户ID';
+COMMENT ON COLUMN agent_plan_sop.agent_id IS '归属的agent, 确定作用的scope, 可能是agent也可能是子agent';
+COMMENT ON COLUMN agent_plan_sop.sop_name IS 'sop的名字';
+COMMENT ON COLUMN agent_plan_sop.sop_desc IS 'sop的描述';
+COMMENT ON COLUMN agent_plan_sop.content IS 'sop内容';
+
+
+DROP SEQUENCE IF EXISTS agent_plan_sop_seq;
+CREATE SEQUENCE agent_plan_sop_seq
+    START 1;
+
+-- ============================
+-- 自动更新时间戳功能
+-- ============================
+CREATE OR REPLACE FUNCTION update_update_time_agent_plan_sop()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.update_time = now();
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_update_time_agent_plan_sop
+    BEFORE UPDATE ON agent_plan_sop
+    FOR EACH ROW
+    EXECUTE FUNCTION update_update_time_agent_plan_sop();
+
+
+-- Table: agent_memory_tips
+-- Description: 长期记忆之一-调优经验
+
+CREATE TABLE agent_memory_tips (
+                                   id              BIGSERIAL PRIMARY KEY, -- 主键 (PostgreSQL 使用 BIGSERIAL 自增)
+                                   create_time     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 创建时间
+                                   update_time     TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP, -- 更新时间 (PostgreSQL 不支持 ON UPDATE CURRENT_TIMESTAMP，需用触发器实现，此处仅设默认值)
+                                   creator         VARCHAR(64) DEFAULT '', -- 创建者
+                                   updater         VARCHAR(64) DEFAULT '', -- 更新者
+                                   deleted         SMALLINT DEFAULT 0, -- 是否删除：0否，1是 (PostgreSQL 常用 SMALLINT 或 BOOLEAN)
+                                   tenant_id       BIGINT, -- 租户ID
+                                   biz_module      VARCHAR(64), -- 业务模块名字, 用于什么, 或者业务上的分类, 比如: 用于表选择、根因分析逻辑
+                                   agent_id        VARCHAR(64), -- 归属的agent, 确定作用的scope, 可能是agent也可能是子agent
+                                   is_dynamic_recall SMALLINT DEFAULT 1, -- 是否动态召回, 默认是1 (PostgreSQL 常用 SMALLINT 或 BOOLEAN)
+                                   content         TEXT NOT NULL, -- 调优经验内容
+                                   tag_list        TEXT -- 该条经验的标签列表 - list<string> 的jsonstring - 对内容的补充扩展, 用于更准确的召回, 用于模型召回或者向量召回
+);
+
+-- 添加注释
+COMMENT ON TABLE agent_memory_tips IS '长期记忆之一-调优经验';
+COMMENT ON COLUMN agent_memory_tips.id IS '主键';
+COMMENT ON COLUMN agent_memory_tips.create_time IS '创建时间';
+COMMENT ON COLUMN agent_memory_tips.update_time IS '更新时间'; -- 注意：PostgreSQL 不支持列级别的自动更新时间戳，需用触发器
+COMMENT ON COLUMN agent_memory_tips.creator IS '创建者';
+COMMENT ON COLUMN agent_memory_tips.updater IS '更新者';
+COMMENT ON COLUMN agent_memory_tips.deleted IS '是否删除：0否，1是';
+COMMENT ON COLUMN agent_memory_tips.tenant_id IS '租户ID';
+COMMENT ON COLUMN agent_memory_tips.biz_module IS '业务模块名字, 用于什么, 或者业务上的分类, 比如: 用于表选择、根因分析逻辑';
+COMMENT ON COLUMN agent_memory_tips.agent_id IS '归属的agent, 确定作用的scope, 可能是agent也可能是子agent';
+COMMENT ON COLUMN agent_memory_tips.is_dynamic_recall IS '是否动态召回, 默认是1';
+COMMENT ON COLUMN agent_memory_tips.content IS '调优经验内容';
+COMMENT ON COLUMN agent_memory_tips.tag_list IS '该条经验的标签列表
+ - list<string> 的jsonstring
+ - 对内容的补充扩展, 用于更准确的召回, 用于模型召回或者向量召回';
+
+
+DROP SEQUENCE IF EXISTS agent_memory_tips_seq;
+CREATE SEQUENCE agent_memory_tips_seq
+    START 1;
+
+-- ============================
+-- 自动更新时间戳功能
+-- ============================
+CREATE OR REPLACE FUNCTION update_update_time_agent_memory_tips()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.update_time = now();
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_update_time_agent_memory_tips
+    BEFORE UPDATE ON agent_memory_tips
+    FOR EACH ROW
+    EXECUTE FUNCTION update_update_time_agent_memory_tips();
+
+
+CREATE TABLE ai_llm_model_config (
+                                     id BIGSERIAL PRIMARY KEY,
+                                     create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                     update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                                     creator VARCHAR(64) DEFAULT '',
+                                     updater VARCHAR(64) DEFAULT '',
+                                     deleted SMALLINT DEFAULT 0,               -- 是否删除：0否，1是
+                                     tenant_id BIGINT,
+                                     model_id VARCHAR(64) NOT NULL UNIQUE,
+                                     model_name VARCHAR(128) NOT NULL,
+                                     provider VARCHAR(64) NOT NULL,
+                                     api_key VARCHAR(512) NOT NULL,
+                                     base_url VARCHAR(512),
+                                     model_type VARCHAR(32) NOT NULL DEFAULT 'chat',
+                                     temperature NUMERIC(3,2) DEFAULT 0.70,
+                                     max_tokens INT,
+                                     remark VARCHAR(255),
+                                     model_config TEXT,
+                                     extend_info TEXT,
+                                     is_global SMALLINT,                       -- 是否全局
+                                     app_id BIGINT,
+                                     CONSTRAINT idx_tenant_app_id UNIQUE (tenant_id, app_id, id)
+);
+
+-- 字段注释
+COMMENT ON TABLE ai_llm_model_config IS '外部大模型接入配置表';
+COMMENT ON COLUMN ai_llm_model_config.id IS '主键';
+COMMENT ON COLUMN ai_llm_model_config.create_time IS '创建时间';
+COMMENT ON COLUMN ai_llm_model_config.update_time IS '更新时间';
+COMMENT ON COLUMN ai_llm_model_config.creator IS '创建者';
+COMMENT ON COLUMN ai_llm_model_config.updater IS '更新者';
+COMMENT ON COLUMN ai_llm_model_config.deleted IS '是否删除：0否，1是';
+COMMENT ON COLUMN ai_llm_model_config.tenant_id IS '租户ID';
+COMMENT ON COLUMN ai_llm_model_config.model_id IS '模型标识，如 openai-gpt-4o、deepseek-chat、zhipu-glm-4';
+COMMENT ON COLUMN ai_llm_model_config.model_name IS '模型名称，如 GPT-4o、DeepSeek-V2、GLM-4';
+COMMENT ON COLUMN ai_llm_model_config.provider IS '供应商：openai / deepseek / zhipu / minimax / qwen';
+COMMENT ON COLUMN ai_llm_model_config.api_key IS 'API key（建议加密存储）';
+COMMENT ON COLUMN ai_llm_model_config.base_url IS '可选：自定义API地址，如代理地址';
+COMMENT ON COLUMN ai_llm_model_config.model_type IS '模型类别：chat / image / embedding / audio / tool';
+COMMENT ON COLUMN ai_llm_model_config.temperature IS '温度';
+COMMENT ON COLUMN ai_llm_model_config.max_tokens IS '生成文本最大长度';
+COMMENT ON COLUMN ai_llm_model_config.remark IS '说明备注';
+COMMENT ON COLUMN ai_llm_model_config.model_config IS 'model配置, json';
+COMMENT ON COLUMN ai_llm_model_config.extend_info IS '扩展字段, json';
+COMMENT ON COLUMN ai_llm_model_config.is_global IS '是否是全局的, 否则需要关联到具体skill上';
+COMMENT ON COLUMN ai_llm_model_config.app_id IS '归属应用id';
+
+DROP SEQUENCE IF EXISTS ai_llm_model_config_seq;
+CREATE SEQUENCE ai_llm_model_config_seq
+    START 1;
+
+-- ============================
+-- 自动更新时间戳功能
+-- ============================
+CREATE OR REPLACE FUNCTION update_update_time_ai_llm_model_config()
+RETURNS TRIGGER AS $$
+BEGIN
+   NEW.update_time = now();
+RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_update_update_time_ai_llm_model_config
+    BEFORE UPDATE ON ai_llm_model_config
+    FOR EACH ROW
+    EXECUTE FUNCTION update_update_time_ai_llm_model_config();
