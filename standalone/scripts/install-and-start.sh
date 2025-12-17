@@ -43,8 +43,8 @@ fi
 # 检查架构
 ARCH=$(uname -m)
 echo "系统架构: $ARCH"
-if [ "$ARCH" != "aarch64" ] && [ "$ARCH" != "arm64" ]; then
-    echo -e "${YELLOW}⚠️  警告: 检测到非 ARM64 架构，可能不兼容${NC}"
+if [ "$ARCH" != "aarch64" ] && [ "$ARCH" != "arm64" ] && [ "$ARCH" != "x86_64" ]; then
+    echo -e "${YELLOW}⚠️  警告: 检测到非标准架构（$ARCH），支持的架构为 AMD64(x86_64) 或 ARM64(aarch64)${NC}"
 fi
 
 # 检查内存

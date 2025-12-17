@@ -149,6 +149,18 @@ ELASTICSEARCH_HOST=172.27.181.228
 
 Cloud 服务会将这些变量注入 `config/spring/application-prod.yml`，因此无需在文件中硬编码 IP。
 
+## Standalone Deployment（私有化部署）
+
+For standalone/offline deployment in air-gapped environments, see [standalone/README.md](./standalone/README.md).
+
+`standalone/` 目录提供完整的离线部署方案，包括一键安装脚本、离线镜像包、数据库初始化脚本等，适用于内网环境和无法访问公网 Docker 仓库的场景。
+
+**特性**：
+- ✅ 支持多架构（AMD64 / ARM64）
+- ✅ 完全离线部署，无需联网
+- ✅ 一键安装脚本，自动化部署
+- ✅ 兼容国产化环境（麒麟 V10 等）
+
 ## Database Schema
 
 The PostgreSQL database includes:

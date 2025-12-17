@@ -55,15 +55,20 @@ generate_filename() {
 }
 
 echo "================================"
-echo "Docker ARM64 Image Packer"
+echo "Docker Multi-Arch Image Packer"
 echo "================================"
 echo ""
-echo "📦 Target platform: linux/arm64"
+echo "📦 Target platform: Multi-arch (AMD64/ARM64)"
 echo "📁 Output directory: $OUTPUT_DIR"
 echo ""
 
-# Pull and save ARM64 images
-echo "🔄 Pulling and saving ARM64 images..."
+# Detect current system architecture
+ARCH=$(uname -m)
+echo "🖥️  System architecture: $ARCH"
+echo ""
+
+# Pull and save multi-arch images
+echo "🔄 Pulling and saving multi-arch images..."
 echo ""
 
 SAVED_COUNT=0
@@ -71,7 +76,7 @@ TOTAL_COUNT=${#IMAGES[@]}
 
 for IMAGE in "${IMAGES[@]}"; do
   echo "⏳ Pulling: $IMAGE"
-  if docker pull --platform linux/arm64 "$IMAGE"; then
+  if docker pull "$IMAGE"; then
     echo "✅ Successfully pulled: $IMAGE"
   else
     echo "❌ Failed to pull: $IMAGE"
@@ -113,5 +118,7 @@ echo ""
 echo "📦 Total size: $TOTAL_SIZE"
 echo ""
 echo "================================"
-echo "✅ ARM64 image pack completed!"
+echo "✅ Multi-arch image pack completed!"
 echo "================================"
+echo ""
+echo "ℹ️  Images are multi-architecture and will work on both AMD64 and ARM64 systems"
