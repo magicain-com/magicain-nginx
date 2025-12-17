@@ -27,7 +27,7 @@ services:
       redis:
         condition: service_healthy
     environment:
-      - SPRING_PROFILES_ACTIVE: prod
+      SPRING_PROFILES_ACTIVE: prod
     ports:
       - "48080:48080"
     volumes:
