@@ -100,18 +100,24 @@ DOCKER_REGISTRY_USERNAME=your_username
 DOCKER_REGISTRY_PASSWORD=your_password
 ```
 
-2. 运行打包脚本：
+2. 运行一键打包脚本（推荐）：
 
 ```bash
 cd standalone
-bash scripts/docker-save.sh
+bash scripts/build-deployment-package.sh
 ```
 
-该脚本会：
-- 自动登录 Docker 镜像仓库（如果提供了凭证）
-- 拉取所有多架构镜像（支持 AMD64 和 ARM64）
-- 将每个镜像单独保存为 tar 文件到 `docker/images/` 目录
-- 显示详细的打包进度和文件大小
+该脚本会自动完成：
+- 使用 `docker-save.sh` 拉取最新的 Docker 镜像
+- 将镜像保存到 `docker/images/` 目录
+- 打包整个 standalone 目录为 zip 文件
+- 保存到 `standalone/build/` 目录，文件名包含时间戳
+
+**脚本输出示例**：
+```
+standalone/build/
+└── standalone-deployment-20231217-143022.zip  (~1.3GB)
+```
 
 **打包的镜像列表**：
 - `cloud_main.tar` (~440MB) - 后端服务（多架构）
@@ -127,23 +133,21 @@ bash scripts/docker-save.sh
 
 > **注意**：镜像构建为多架构（multi-arch），Docker 会根据当前系统架构自动选择对应版本，部署时无需关心架构差异。
 
-3. 打包完整部署包：
+**或者手动打包（如果只需更新镜像）**：
 
 ```bash
-# 返回项目根目录
-cd ..
+# 仅拉取和保存镜像
+cd standalone
+bash scripts/docker-save.sh
 
-# 打包整个 standalone 目录
+# 手动打包
+cd ..
 zip -r standalone-deployment.zip standalone/ \
   -x "standalone/.git/*" \
+  -x "standalone/build/*" \
   -x "standalone/logs/*" \
   -x "standalone/.DS_Store"
-
-# 查看打包结果
-ls -lh standalone-deployment.zip
 ```
-
-现在可以将 `standalone-deployment.zip` 传输到目标服务器进行部署。
 
 ### 步骤 3: 配置环境变量
 
@@ -469,8 +473,10 @@ standalone/
 ├── conf/              # Nginx 配置文件
 │   └── standalone.conf
 ├── cert/              # SSL 证书目录
-├── logs/              # 日志目录
+├── logs/              # 日志目录（自动创建）
 │   └── nginx/
+├── build/             # 构建输出目录（自动创建，已 gitignore）
+│   └── standalone-deployment-YYYYMMDD-HHMMSS.zip
 ├── docker/            # Docker 相关文件
 │   ├── images/        # Docker 镜像包目录（多架构镜像）
 │   │   ├── cloud_main.tar
@@ -488,10 +494,17 @@ standalone/
 │       ├── docker-ce-*.rpm
 │       ├── docker-ce-cli-*.rpm
 │       └── docker-compose-plugin-*.rpm
+├── database/          # 数据库初始化脚本
+│   ├── postgresql/    # PostgreSQL 初始化脚本
+│   │   ├── 01-ruoyi-vue-pro.sql
+│   │   ├── 02-quartz.sql
+│   │   └── 03-pg-chatbi.sql
+│   └── mysql/         # MySQL 脚本（备用）
 ├── scripts/           # 部署脚本
-│   ├── install-infra.sh          # 安装 Docker
-│   ├── docker-save.sh            # 打包镜像（多架构）
-│   └── install-and-start.sh      # 一键安装启动
+│   ├── install-infra.sh              # 安装 Docker
+│   ├── docker-save.sh                # 拉取并保存镜像（多架构）
+│   ├── build-deployment-package.sh   # 一键构建部署包
+│   └── install-and-start.sh          # 一键安装启动
 ├── docker-compose.yml # Docker Compose 配置
 ├── .env               # 环境变量配置
 └── README.md          # 本文档

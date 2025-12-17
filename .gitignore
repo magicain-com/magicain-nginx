@@ -16,6 +16,9 @@ standalone/docker/images/
 # Keep infra packages (RPMs) tracked but ignore images
 # *.rpm # Managed by LFS
 
+# Standalone build output
+standalone/build/
+
 # Temporary files
 *.tmp
 *.log
