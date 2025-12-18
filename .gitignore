@@ -5,8 +5,6 @@ ssl/
 # Log files
 logs/
 
-# Environment variables
-.env
 
 # Docker volumes and data
 data/
