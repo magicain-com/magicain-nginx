@@ -283,8 +283,66 @@ sudo bash scripts/install-and-start.sh
 脚本会自动：
 1. 加载新镜像（覆盖旧镜像）
 2. 停止旧版本容器
-3. 使用新镜像重新创建并启动容器
-4. **保留所有数据库和配置数据**
+3. 清理悬空镜像（释放空间）
+4. 使用新镜像强制重建容器
+5. **保留所有数据库和配置数据**
+
+#### 更新机制说明
+
+**1. Docker 镜像更新（main tag）**
+
+由于镜像使用 `main` tag（无版本号），更新机制如下：
+
+- **离线部署场景**：
+  - ✅ 先用 `build-deployment-package.sh` 拉取最新镜像打包
+  - ✅ 部署包中的镜像会覆盖服务器上的旧镜像
+  - ✅ `--force-recreate` 强制用新镜像重建容器
+  - ⚠️  旧镜像会变成 `<none>` 状态，自动被清理
+
+- **在线部署场景**：
+  - 如果没有新的离线包，只是重新运行脚本，不会自动拉取最新镜像
+  - 需要手动 `docker compose pull` 拉取最新版本
+
+**2. PostgreSQL 数据库更新**
+
+PostgreSQL 初始化脚本的行为：
+
+- **首次安装**：
+  - 数据目录 `/data/postgres` 为空
+  - 自动执行 `database/postgresql/*.sql` 初始化脚本
+  - 创建数据库结构和初始数据
+
+- **更新时**：
+  - 数据目录已存在
+  - **初始化脚本不会重新执行**（PostgreSQL 官方镜像行为）
+  - 所有数据保持不变
+
+- **Schema 升级**：
+  - 如果需要升级数据库结构（新增表/字段等）
+  - 需要**手动执行增量 SQL 脚本**
+  - 示例：
+    ```bash
+    docker compose exec postgres psql -U magicain -d magicain -f /path/to/upgrade.sql
+    ```
+
+**3. 完整更新流程（带镜像更新）**
+
+```bash
+# 开发机：构建最新部署包
+cd standalone
+bash scripts/build-deployment-package.sh
+
+# 传输到服务器
+scp build/standalone-deployment-*.zip root@server:/root/
+
+# 服务器：解压并覆盖
+cd /root
+unzip -o standalone-deployment-*.zip
+
+# 运行更新（会用新镜像重建容器）
+cd standalone
+sudo bash scripts/install-and-start.sh
+```
 
 #### 方式二：手动更新
 
@@ -295,13 +353,31 @@ cd standalone
 docker compose pull
 
 # 或者加载离线镜像包
-docker load -i docker/images/xxx.tar
+docker load -i docker/images/cloud_main.tar
+docker load -i docker/images/admin-ui_main.tar
+# ... 其他镜像
 
-# 停止并删除旧容器
+# 停止并删除旧容器（保留数据）
 docker compose down
 
+# 清理悬空镜像
+docker image prune -f
+
 # 使用新镜像启动服务
-docker compose up -d
+docker compose up -d --force-recreate
+```
+
+#### 验证更新
+
+```bash
+# 查看镜像版本
+docker images | grep -E "cloud|admin-ui|agent-ui|user-ui"
+
+# 查看容器创建时间（确认已重建）
+docker compose ps
+
+# 查看容器日志（确认启动正常）
+docker compose logs -f cloud
 ```
 
 ## 故障排查
@@ -451,8 +527,11 @@ df -h
 #### 备份数据库
 
 ```bash
-# 备份 PostgreSQL
+# 备份 PostgreSQL（完整备份）
 docker compose exec postgres pg_dumpall -U postgres > backup_$(date +%Y%m%d).sql
+
+# 备份特定数据库
+docker compose exec postgres pg_dump -U magicain magicain > magicain_backup_$(date +%Y%m%d).sql
 
 # 备份 Redis（如果使用持久化）
 docker compose exec redis redis-cli SAVE
@@ -462,8 +541,105 @@ cp /data/redis/dump.rdb backup_redis_$(date +%Y%m%d).rdb
 #### 恢复数据库
 
 ```bash
-# 恢复 PostgreSQL
+# 恢复 PostgreSQL（完整恢复）
 docker compose exec -T postgres psql -U postgres < backup_20240101.sql
+
+# 恢复特定数据库
+docker compose exec -T postgres psql -U magicain -d magicain < magicain_backup_20240101.sql
+```
+
+### 数据库 Schema 升级
+
+当应用版本更新需要升级数据库结构时：
+
+#### 准备升级脚本
+
+创建增量升级脚本（例如 `upgrade_v2.0.sql`）：
+
+```sql
+-- 示例：添加新表
+CREATE TABLE IF NOT EXISTS new_feature (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- 示例：添加新字段
+ALTER TABLE existing_table 
+ADD COLUMN IF NOT EXISTS new_field VARCHAR(100);
+
+-- 示例：创建索引
+CREATE INDEX IF NOT EXISTS idx_existing_table_new_field 
+ON existing_table(new_field);
+```
+
+#### 执行升级
+
+**方式一：从宿主机执行**
+
+```bash
+# 将升级脚本复制到服务器
+scp upgrade_v2.0.sql root@server:/root/
+
+# 在服务器上执行
+cd /root/standalone
+docker compose exec -T postgres psql -U magicain -d magicain < /root/upgrade_v2.0.sql
+```
+
+**方式二：在容器内执行**
+
+```bash
+# 进入 postgres 容器
+docker compose exec postgres bash
+
+# 在容器内执行
+psql -U magicain -d magicain << 'EOF'
+-- 升级 SQL 语句
+ALTER TABLE existing_table ADD COLUMN IF NOT EXISTS new_field VARCHAR(100);
+EOF
+```
+
+**方式三：使用临时挂载**
+
+```bash
+# 将升级脚本放到 database/postgresql 目录
+cp upgrade_v2.0.sql database/postgresql/
+
+# 在容器内执行
+docker compose exec postgres psql -U magicain -d magicain \
+  -f /docker-entrypoint-initdb.d/upgrade_v2.0.sql
+```
+
+#### 升级后验证
+
+```bash
+# 查看表结构
+docker compose exec postgres psql -U magicain -d magicain -c "\d table_name"
+
+# 查看所有表
+docker compose exec postgres psql -U magicain -d magicain -c "\dt"
+
+# 验证数据
+docker compose exec postgres psql -U magicain -d magicain -c "SELECT COUNT(*) FROM new_feature;"
+```
+
+#### 升级回滚
+
+如果升级出现问题：
+
+```bash
+# 1. 停止服务
+docker compose stop cloud
+
+# 2. 恢复数据库到升级前的备份
+docker compose exec -T postgres psql -U magicain -d magicain < backup_before_upgrade.sql
+
+# 3. 回滚到旧版本镜像（如果需要）
+docker load -i old_version/cloud_main.tar
+docker compose up -d --force-recreate cloud
+
+# 4. 验证回滚成功
+docker compose logs cloud
 ```
 
 ## 目录结构
@@ -525,3 +701,123 @@ standalone/
 modprobe: nf_tables module not found
 ```
 解决：`yum install iptables iptables-nft -y` 或手动加载内核模块。
+
+---
+
+## 更新最佳实践
+
+### 版本更新策略
+
+由于使用 `main` tag（无具体版本号），建议采用以下更新策略：
+
+#### 1. 小版本更新（无 Schema 变更）
+
+**场景**：应用 Bug 修复、性能优化等，数据库结构不变
+
+```bash
+# 步骤 1: 备份数据（可选但推荐）
+docker compose exec postgres pg_dump -U magicain magicain > backup_before_update.sql
+
+# 步骤 2: 获取最新部署包（开发机构建）
+# 步骤 3: 传输到服务器并解压覆盖
+unzip -o standalone-deployment-*.zip
+
+# 步骤 4: 运行更新脚本
+cd standalone
+sudo bash scripts/install-and-start.sh
+
+# 步骤 5: 验证服务
+docker compose ps
+docker compose logs -f cloud
+```
+
+#### 2. 大版本更新（有 Schema 变更）
+
+**场景**：数据库结构变更、新增表/字段等
+
+```bash
+# 步骤 1: 完整备份（必需）
+docker compose exec postgres pg_dump -U magicain magicain > backup_v1.0_$(date +%Y%m%d).sql
+
+# 步骤 2: 停止服务
+docker compose stop cloud
+
+# 步骤 3: 执行数据库升级脚本
+docker compose exec postgres psql -U magicain -d magicain -f /path/to/upgrade.sql
+
+# 步骤 4: 验证数据库升级
+docker compose exec postgres psql -U magicain -d magicain -c "\dt"
+
+# 步骤 5: 更新应用（新镜像）
+sudo bash scripts/install-and-start.sh
+
+# 步骤 6: 验证服务
+docker compose logs -f cloud
+```
+
+### 更新前检查清单
+
+- [ ] 查看版本更新说明（是否有 Schema 变更）
+- [ ] 备份 PostgreSQL 数据库
+- [ ] 备份 Redis 数据（如果重要）
+- [ ] 记录当前运行的镜像版本
+- [ ] 准备回滚方案（保留旧版本镜像）
+- [ ] 通知用户系统维护时间窗口
+
+### 更新后验证清单
+
+- [ ] 检查所有容器运行状态：`docker compose ps`
+- [ ] 检查应用日志无异常：`docker compose logs cloud`
+- [ ] 测试 API 接口可用性
+- [ ] 验证前端页面加载正常
+- [ ] 检查数据库连接正常
+- [ ] 验证关键业务功能
+
+### 回滚方案
+
+如果更新后出现问题，快速回滚步骤：
+
+```bash
+# 1. 停止新版本服务
+docker compose stop
+
+# 2. 恢复数据库（如果执行了 Schema 升级）
+docker compose exec -T postgres psql -U magicain -d magicain < backup_before_update.sql
+
+# 3. 加载旧版本镜像
+docker load -i old_version/cloud_main.tar
+docker load -i old_version/admin-ui_main.tar
+# ... 其他镜像
+
+# 4. 启动旧版本
+docker compose up -d --force-recreate
+
+# 5. 验证回滚成功
+docker compose ps
+docker compose logs -f cloud
+```
+
+### 镜像版本管理建议
+
+为了更好地管理版本，建议：
+
+1. **保留旧版本镜像**
+   ```bash
+   # 在更新前，导出当前镜像作为备份
+   docker save cloud:main > backup/cloud_main_v1.0.tar
+   ```
+
+2. **使用具体版本 tag**（如果可能）
+   ```yaml
+   # 推荐：使用具体版本
+   image: magictensor/cloud:v1.2.3
+   
+   # 不推荐：使用 main tag（难以回滚）
+   image: magictensor/cloud:main
+   ```
+
+3. **记录部署历史**
+   ```bash
+   # 创建部署日志
+   echo "$(date): Deployed version $(docker images | grep cloud:main)" >> deployment.log
+   ```

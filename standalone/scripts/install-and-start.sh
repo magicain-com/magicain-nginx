@@ -261,12 +261,21 @@ docker image prune -f
 
 echo ""
 echo "启动 Docker Compose 服务..."
+echo -e "${BLUE}ℹ️  使用 --force-recreate 强制重建容器以应用新镜像${NC}"
 if docker compose up -d --force-recreate; then
     echo -e "${GREEN}✅ 服务启动成功${NC}"
 else
     echo -e "${RED}❌ 服务启动失败${NC}"
     echo "查看日志: docker compose logs"
     exit 1
+fi
+
+echo ""
+echo -e "${BLUE}ℹ️  重要说明:${NC}"
+echo "   - Docker 镜像: 如有新版本已通过离线包更新"
+echo "   - PostgreSQL: 数据库数据已保留，初始化脚本不会重新执行"
+if [ -d "/data/postgres" ] && [ "$(ls -A /data/postgres 2>/dev/null)" ]; then
+    echo -e "${YELLOW}   ⚠️  检测到已有数据库数据，如需 schema 升级请手动执行 SQL${NC}"
 fi
 
 echo ""
