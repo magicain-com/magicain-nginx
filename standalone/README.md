@@ -6,6 +6,8 @@
 
 ### 一、打包部署包（开发机）
 
+> 💡 **环境要求**：需要 bash 和 zip 命令（Windows 用户请安装 Git Bash）
+
 #### 1. 配置 Docker 凭据（首次需要）
 
 ```bash
@@ -30,6 +32,8 @@ bash scripts/build-deployment-package.sh
 ```
 
 **输出**：`standalone/build/standalone-deployment-20231217-143022.zip` (~1.3GB)
+
+> 📦 **多架构镜像**：自动拉取 AMD64 和 ARM64 双架构，一个包适配所有服务器
 
 ---
 
@@ -154,6 +158,8 @@ docker compose up -d
 
 ## ⚙️ 系统要求
 
+### 部署服务器
+
 | 项目 | 要求 |
 |------|------|
 | **CPU** | AMD64 或 ARM64，推荐 4 核+ |
@@ -162,6 +168,20 @@ docker compose up -d
 | **系统** | CentOS 7+、Ubuntu 18.04+、麒麟 V10 |
 
 > 💡 **多架构支持**：镜像支持 AMD64 和 ARM64，自动适配，无需手动选择
+
+### 开发机（打包环境）
+
+| 项目 | 要求 |
+|------|------|
+| **操作系统** | Windows (Git Bash)、macOS、Linux |
+| **必需工具** | Docker、bash、zip |
+| **Docker 版本** | 推荐 20.10+ (支持多架构拉取) |
+
+#### Windows 用户
+
+安装 **Git Bash** 即可（自带 bash 和 zip）：
+- 下载：https://git-scm.com/download/win
+- 安装后打开 Git Bash 运行脚本
 
 ---
 

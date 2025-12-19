@@ -69,6 +69,7 @@ echo ""
 
 # Pull and save multi-arch images
 echo "🔄 Pulling and saving multi-arch images..."
+echo "ℹ️  Docker will automatically pull all architectures (AMD64 + ARM64)"
 echo ""
 
 SAVED_COUNT=0
@@ -76,8 +77,14 @@ TOTAL_COUNT=${#IMAGES[@]}
 
 for IMAGE in "${IMAGES[@]}"; do
   echo "⏳ Pulling: $IMAGE"
-  if docker pull "$IMAGE"; then
-    echo "✅ Successfully pulled: $IMAGE"
+  
+  # 使用 --all-platforms 拉取所有架构（Docker 20.10+）
+  # 如果不支持该参数，会fallback到默认行为
+  if docker pull --all-platforms "$IMAGE" 2>/dev/null; then
+    echo "✅ Successfully pulled (all platforms): $IMAGE"
+  elif docker pull "$IMAGE"; then
+    echo "✅ Successfully pulled (default platform): $IMAGE"
+    echo "⚠️  Note: --all-platforms not supported, using default platform"
   else
     echo "❌ Failed to pull: $IMAGE"
     exit 1
