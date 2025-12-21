@@ -61,30 +61,69 @@ echo ""
 
 cd "$PROJECT_ROOT"
 
-# 检查 zip 命令是否可用
-if ! command -v zip &> /dev/null; then
-    echo -e "${RED}❌ zip 命令未找到${NC}"
-    echo ""
-    echo "请安装 zip 工具："
-    echo "  - Windows: 安装 Git Bash (https://git-scm.com/download/win)"
-    echo "  - Ubuntu/Debian: sudo apt-get install zip"
-    echo "  - CentOS/RHEL: sudo yum install zip"
-    echo "  - macOS: 系统自带"
-    exit 1
+OS_NAME="$(uname -s)"
+IS_GIT_BASH_WIN=false
+case "$OS_NAME" in
+    MINGW*|MSYS*|CYGWIN*)
+        IS_GIT_BASH_WIN=true
+        ;;
+esac
+
+if [ "$IS_GIT_BASH_WIN" = true ]; then
+    echo "检测到 Windows Git Bash，使用 PowerShell 压缩..."
+
+    PROJECT_ROOT_WIN="$(cd "$PROJECT_ROOT" && { pwd -W 2>/dev/null || pwd; })"
+    PACKAGE_PATH_WIN="$(cd "$(dirname "$PACKAGE_PATH")" && { pwd -W 2>/dev/null || pwd; })/$(basename "$PACKAGE_PATH")"
+    if command -v cygpath &> /dev/null; then
+        PROJECT_ROOT_WIN="$(cygpath -w "$PROJECT_ROOT")"
+        PACKAGE_PATH_WIN="$(cygpath -w "$PACKAGE_PATH")"
+    fi
+
+    POWERSHELL_CMD=$(cat <<EOF
+\$ErrorActionPreference = 'Stop'
+\$projectRoot = '$PROJECT_ROOT_WIN'
+\$packagePath = '$PACKAGE_PATH_WIN'
+\$tempRoot = Join-Path \$env:TEMP ('standalone-package-' + [guid]::NewGuid())
+\$source = Join-Path \$projectRoot 'standalone'
+\$dest = Join-Path \$tempRoot 'standalone'
+New-Item -ItemType Directory -Path \$dest -Force | Out-Null
+robocopy \$source \$dest /E /XD (Join-Path \$source '.git') (Join-Path \$source 'build') (Join-Path \$source 'logs') /XF '.DS_Store' '.env' /NJH /NJS /NDL /NFL /NC /NS | Out-Null
+if (\$LASTEXITCODE -ge 8) { throw 'robocopy failed' }
+Compress-Archive -Path \$dest -DestinationPath \$packagePath -Force
+Remove-Item -Path \$tempRoot -Recurse -Force -ErrorAction SilentlyContinue
+EOF
+)
+
+    powershell -NoProfile -Command "$POWERSHELL_CMD"
+    PACKAGE_STATUS=$?
+else
+    # 检查 zip 命令是否可用
+    if ! command -v zip &> /dev/null; then
+        echo -e "${RED}❌ zip 命令未找到${NC}"
+        echo ""
+        echo "请安装 zip 工具："
+        echo "  - Windows: 安装 Git Bash (https://git-scm.com/download/win)"
+        echo "  - Ubuntu/Debian: sudo apt-get install zip"
+        echo "  - CentOS/RHEL: sudo yum install zip"
+        echo "  - macOS: 系统自带"
+        exit 1
+    fi
+
+    # 打包文件，排除不必要的内容
+    echo "正在打包，请稍候..."
+    zip -r "$PACKAGE_PATH" standalone/ \
+      -x "standalone/.git/*" \
+      -x "standalone/build/*" \
+      -x "standalone/logs/*" \
+      -x "standalone/.DS_Store" \
+      -x "standalone/**/.DS_Store" \
+      -x "standalone/.env" \
+      -q
+
+    PACKAGE_STATUS=$?
 fi
 
-# 打包文件，排除不必要的内容
-echo "正在打包，请稍候..."
-zip -r "$PACKAGE_PATH" standalone/ \
-  -x "standalone/.git/*" \
-  -x "standalone/build/*" \
-  -x "standalone/logs/*" \
-  -x "standalone/.DS_Store" \
-  -x "standalone/**/.DS_Store" \
-  -x "standalone/.env" \
-  -q
-
-if [ $? -eq 0 ]; then
+if [ $PACKAGE_STATUS -eq 0 ]; then
     echo -e "${GREEN}✅ 打包完成${NC}"
 else
     echo -e "${RED}❌ 打包失败${NC}"
