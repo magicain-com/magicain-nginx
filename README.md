@@ -151,15 +151,74 @@ Cloud 服务会将这些变量注入 `config/spring/application-prod.yml`，因�
 
 ## Standalone Deployment（私有化部署）
 
-For standalone/offline deployment in air-gapped environments, see [standalone/README.md](./standalone/README.md).
+### Building Deployment Package
 
-`standalone/` 目录提供完整的离线部署方案，包括一键安装脚本、离线镜像包、数据库初始化脚本等，适用于内网环境和无法访问公网 Docker 仓库的场景。
+For creating a standalone deployment package for air-gapped/offline environments:
 
-**特性**：
-- ✅ 支持多架构（AMD64 / ARM64）
-- ✅ 完全离线部署，无需联网
-- ✅ 一键安装脚本，自动化部署
-- ✅ 兼容国产化环境（麒麟 V10 等）
+#### Prerequisites
+
+- Docker (version 20.10+ recommended for multi-arch support)
+- bash and zip command (Windows users: install Git Bash)
+- Access to private Docker registry (if pulling private images)
+
+#### Quick Build
+
+```bash
+# 1. Configure Docker registry credentials (first time only)
+cp .env.standalone.example .env.standalone
+# Edit .env.standalone with your actual credentials:
+#   DOCKER_REGISTRY_URL=your.registry.com
+#   DOCKER_REGISTRY_USERNAME=your_username
+#   DOCKER_REGISTRY_PASSWORD=your_password
+
+# 2. Build deployment package (pulls images + creates zip)
+bash scripts/build-standalone.sh
+
+# Output: build/standalone-deployment-YYYYMMDD-HHMMSS.zip (~1.3GB)
+```
+
+The build script automatically:
+- ✅ Loads credentials from `.env.standalone`
+- ✅ Logs into Docker registry
+- ✅ Pulls all Docker images (AMD64 + ARM64)
+- ✅ Saves images to `standalone/docker/images/`
+- ✅ Packages everything into a dated `.zip` file in `build/` directory
+
+#### Build Process Details
+
+**Step 1: Load configuration**
+- Reads `.env.standalone` for Docker registry credentials
+- Performs Docker login if credentials are provided
+
+**Step 2: Pull and save Docker images (8 images)**
+- `cloud:main`, `admin-ui:main`, `agent-ui:main`, `agent-ui:main-noda`, `user-ui:main`
+- `nginx:1.25-alpine`, `pgvector:pg16`, `redis:7-alpine`
+- Pulls multi-architecture images (AMD64 + ARM64)
+- Saves to `standalone/docker/images/*.tar`
+
+**Step 3: Create build directory**
+- Creates `build/` directory in project root
+
+**Step 4: Package standalone directory**
+- Creates `standalone-deployment-YYYYMMDD-HHMMSS.zip`
+- Excludes: `.git/`, `build/`, `logs/`, `.DS_Store`, `.env`
+
+### Deploying to Servers
+
+Once you have the deployment package, see **[standalone/README.md](./standalone/README.md)** for complete deployment instructions including:
+- ✅ How to transfer and extract the package
+- ✅ One-command installation script
+- ✅ Service management
+- ✅ Update procedures
+- ✅ Troubleshooting guide
+- ✅ Database backup/restore
+- ✅ Schema upgrade procedures
+
+**Deployment Features**:
+- ✅ Multi-architecture support (AMD64 / ARM64)
+- ✅ Completely offline deployment (no internet required)
+- ✅ One-command installation script
+- ✅ Compatible with Kylin V10 and other domestic OS
 
 ## Database Schema
 
