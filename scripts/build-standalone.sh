@@ -16,6 +16,47 @@ STANDALONE_DIR="$PROJECT_ROOT/standalone"
 BUILD_DIR="$PROJECT_ROOT/build"
 OUTPUT_DIR="$STANDALONE_DIR/docker/images"
 
+# 解析目标架构参数：amd64 / arm64（默认取当前系统架构）
+HOST_ARCH_RAW=$(uname -m)
+case "$HOST_ARCH_RAW" in
+  x86_64) HOST_ARCH="amd64" ;;
+  aarch64|arm64) HOST_ARCH="arm64" ;;
+  *)
+    HOST_ARCH="amd64"
+    echo -e "${YELLOW}⚠️  未知主机架构: $HOST_ARCH_RAW，默认使用 amd64${NC}"
+    ;;
+esac
+
+TARGET_ARCH="$HOST_ARCH"
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --arch=*)
+      TARGET_ARCH="${1#*=}"
+      shift
+      ;;
+    --arch)
+      TARGET_ARCH="$2"
+      shift 2
+      ;;
+    *)
+      echo -e "${YELLOW}⚠️  忽略未知参数: $1${NC}"
+      shift
+      ;;
+  esac
+done
+
+case "$TARGET_ARCH" in
+  amd64|arm64) ;;
+  *)
+    echo -e "${RED}❌ 无效架构: $TARGET_ARCH（仅支持 amd64 / arm64）${NC}"
+    exit 1
+    ;;
+esac
+
+# 根据架构设置镜像拉取选项和输出标识
+PULL_LABEL="$TARGET_ARCH"
+ZIP_ARCH_SUFFIX="$TARGET_ARCH"
+
 # Docker 镜像列表
 IMAGES=(
   "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:main"
@@ -28,9 +69,9 @@ IMAGES=(
   "docker.m.daocloud.io/redis:7-alpine"
 )
 
-# 生成带日期的文件名
+# 生成带日期的文件名（包含架构标识）
 DATE_STAMP=$(date +%Y%m%d-%H%M%S)
-PACKAGE_NAME="standalone-deployment-${DATE_STAMP}.zip"
+PACKAGE_NAME="standalone-deployment-${ZIP_ARCH_SUFFIX}-${DATE_STAMP}.zip"
 PACKAGE_PATH="$BUILD_DIR/$PACKAGE_NAME"
 
 # Function to generate filename from image name
@@ -85,7 +126,7 @@ echo ""
 # Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"
 
-echo "📦 Target platform: Multi-arch (AMD64/ARM64)"
+echo "📦 Target platform: $PULL_LABEL"
 echo "📁 Output directory: $OUTPUT_DIR"
 echo ""
 
@@ -94,8 +135,8 @@ ARCH=$(uname -m)
 echo "🖥️  System architecture: $ARCH"
 echo ""
 
-echo "🔄 Pulling and saving multi-arch images..."
-echo "ℹ️  Docker will automatically pull all architectures (AMD64 + ARM64)"
+echo "🔄 Pulling and saving images..."
+echo "ℹ️  Pulling architecture: $TARGET_ARCH"
 echo ""
 
 SAVED_COUNT=0
@@ -104,15 +145,11 @@ TOTAL_COUNT=${#IMAGES[@]}
 for IMAGE in "${IMAGES[@]}"; do
   echo "⏳ [$((SAVED_COUNT+1))/$TOTAL_COUNT] Pulling: $IMAGE"
   
-  # 使用 --all-platforms 拉取所有架构（Docker 20.10+）
-  # 如果不支持该参数，会fallback到默认行为
-  if docker pull --all-platforms "$IMAGE" 2>/dev/null; then
-    echo "✅ Successfully pulled (all platforms): $IMAGE"
-  elif docker pull "$IMAGE"; then
-    echo "✅ Successfully pulled (default platform): $IMAGE"
-    echo -e "${YELLOW}⚠️  Note: --all-platforms not supported, using default platform${NC}"
+  # 单架构拉取
+  if docker pull --platform "linux/$TARGET_ARCH" "$IMAGE"; then
+    echo "✅ Successfully pulled ($TARGET_ARCH): $IMAGE"
   else
-    echo -e "${RED}❌ Failed to pull: $IMAGE${NC}"
+    echo -e "${RED}❌ Failed to pull ($TARGET_ARCH): $IMAGE${NC}"
     exit 1
   fi
   
