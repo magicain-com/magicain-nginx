@@ -160,7 +160,7 @@ for IMAGE in "${IMAGES[@]}"; do
   if docker save -o "$OUTPUT_FILE" "$IMAGE"; then
     FILE_SIZE=$(ls -lh "$OUTPUT_FILE" | awk '{print $5}')
     echo -e "${GREEN}✅ Successfully saved: $(basename "$OUTPUT_FILE") ($FILE_SIZE)${NC}"
-    ((SAVED_COUNT++))
+    ((++SAVED_COUNT))
   else
     echo -e "${RED}❌ Failed to save: $IMAGE${NC}"
     exit 1
