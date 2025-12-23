@@ -16,18 +16,8 @@ STANDALONE_DIR="$PROJECT_ROOT/standalone"
 BUILD_DIR="$PROJECT_ROOT/build"
 OUTPUT_DIR="$STANDALONE_DIR/docker/images"
 
-# 解析目标架构参数：amd64 / arm64（默认取当前系统架构）
-HOST_ARCH_RAW=$(uname -m)
-case "$HOST_ARCH_RAW" in
-  x86_64) HOST_ARCH="amd64" ;;
-  aarch64|arm64) HOST_ARCH="arm64" ;;
-  *)
-    HOST_ARCH="amd64"
-    echo -e "${YELLOW}⚠️  未知主机架构: $HOST_ARCH_RAW，默认使用 amd64${NC}"
-    ;;
-esac
-
-TARGET_ARCH="$HOST_ARCH"
+# 必须指定架构参数：--arch amd64 | --arch arm64
+TARGET_ARCH=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --arch=*)
@@ -45,6 +35,11 @@ while [[ $# -gt 0 ]]; do
   esac
 done
 
+if [ -z "$TARGET_ARCH" ]; then
+  echo -e "${RED}❌ 必须指定架构参数: --arch amd64 | --arch arm64${NC}"
+  exit 1
+fi
+
 case "$TARGET_ARCH" in
   amd64|arm64) ;;
   *)
@@ -53,7 +48,6 @@ case "$TARGET_ARCH" in
     ;;
 esac
 
-# 根据架构设置镜像拉取选项和输出标识
 PULL_LABEL="$TARGET_ARCH"
 ZIP_ARCH_SUFFIX="$TARGET_ARCH"
 
@@ -69,7 +63,7 @@ IMAGES=(
   "docker.m.daocloud.io/redis:7-alpine"
 )
 
-# 生成带日期的文件名（包含架构标识）
+# 生成带日期的文件名（包含架构后缀）
 DATE_STAMP=$(date +%Y%m%d-%H%M%S)
 PACKAGE_NAME="standalone-deployment-${ZIP_ARCH_SUFFIX}-${DATE_STAMP}.zip"
 PACKAGE_PATH="$BUILD_DIR/$PACKAGE_NAME"

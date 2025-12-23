@@ -172,10 +172,9 @@ cp .env.standalone.example .env.standalone
 #   DOCKER_REGISTRY_PASSWORD=your_password
 
 # 2. Build deployment package (pulls images + creates zip)
-#    默认按当前主机架构打包；可显式指定 --arch amd64 | arm64
-bash scripts/build-standalone.sh            # 默认：当前机器架构
-bash scripts/build-standalone.sh --arch amd64   # 指定打包 x86_64
-bash scripts/build-standalone.sh --arch arm64   # 指定打包 ARM64
+#    必须指定架构：--arch amd64 | --arch arm64
+bash scripts/build-standalone.sh --arch amd64   # 打包 x86_64
+bash scripts/build-standalone.sh --arch arm64   # 打包 ARM64
 
 # Output:
 #   build/standalone-deployment-<arch>-YYYYMMDD-HHMMSS.zip
@@ -184,7 +183,7 @@ bash scripts/build-standalone.sh --arch arm64   # 指定打包 ARM64
 The build script automatically:
 - ✅ Loads credentials from `.env.standalone`
 - ✅ Logs into Docker registry
-- ✅ Pulls Docker images for the chosen arch (`amd64` or `arm64`; default: host arch)
+- ✅ Pulls Docker images for specified arch (`--platform linux/amd64` or `linux/arm64`)
 - ✅ Saves images to `standalone/docker/images/`
 - ✅ Packages everything into a dated `.zip` file in `build/` directory (arch suffix)
 
@@ -194,10 +193,10 @@ The build script automatically:
 - Reads `.env.standalone` for Docker registry credentials
 - Performs Docker login if credentials are provided
 
-**Step 2: Pull and save Docker images (8 images)**
+**Step 2: Pull and save Docker images (8 images, single arch)**
 - `cloud:main`, `admin-ui:main`, `agent-ui:main`, `agent-ui:main-noda`, `user-ui:main`
 - `nginx:1.25-alpine`, `pgvector:pg16`, `redis:7-alpine`
-- Pulls multi-architecture images (AMD64 + ARM64)
+- Pulls single architecture images (`linux/amd64` or `linux/arm64`)
 - Saves to `standalone/docker/images/*.tar`
 
 **Step 3: Create build directory**
