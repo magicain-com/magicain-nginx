@@ -4994,7 +4994,7 @@ INSERT INTO system_users (id, username, password, nickname, remark, dept_id, pos
 INSERT INTO system_users (id, username, password, nickname, remark, dept_id, post_ids, email, mobile, sex, avatar, status, login_ip, login_date, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (139, 'wwbwwb', '$2a$04$aOHoFbQU6zfBk/1Z9raF/ugTdhjNdx7culC1HhO0zvoczAnahCiMq', '小秃头', NULL, NULL, NULL, '', '', 0, NULL, 0, '0:0:0:0:0:0:0:1', '2024-09-10 21:03:58', NULL, '2024-09-10 21:03:58', NULL, '2025-04-21 14:23:08', '0', 1);
 INSERT INTO system_users (id, username, password, nickname, remark, dept_id, post_ids, email, mobile, sex, avatar, status, login_ip, login_date, creator, create_time, updater, update_time, deleted, tenant_id) VALUES (141, 'admin1', '$2a$04$oj6F6d7HrZ70kYVD3TNzEu.m3TPUzajOVuC66zdKna8KRerK1FmVa', '新用户', NULL, NULL, NULL, '', '', 0, '', 0, '0:0:0:0:0:0:0:1', '2025-04-08 13:09:07', '1', '2025-04-08 13:09:07', '1', '2025-04-08 13:09:07', '0', 1);
 INSERT INTO system_users (id, username, password, nickname, remark, dept_id, post_ids, email, mobile, sex, avatar, status, login_ip, login_date, creator, create_time, updater, update_time, deleted, tenant_id)
-VALUES (143, 'agentadmin', '$2a$04$/Vfd4RwZN4wvZgVPr39wteE51t3TcA9uIr.oWYYancx05vQFbVi7m', '智能体租户超管', NULL, NULL, NULL, '', '', 0, '', 0, '172.17.0.1', '2025-12-18 07:16:07.361932', '1', '2025-12-17 22:50:38.290817', '143', '2025-12-18 07:21:18.920986', '0', 123);
+VALUES (143, 'agentadmin', '$04$i1je8nYcXR/.BbGQP5qr/Ot/mbUtLA0H7uUYSc43eGrRP5j9KLTtW', '智能体租户超管', NULL, NULL, NULL, '', '', 0, '', 0, '172.17.0.1', '2025-12-18 07:16:07.361932', '1', '2025-12-17 22:50:38.290817', '143', '2025-12-18 07:21:18.920986', '0', 123);
 
 COMMIT;
 -- @formatter:on
