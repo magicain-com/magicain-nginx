@@ -254,7 +254,7 @@ if [ "$IS_GIT_BASH_WIN" = true ]; then
 \$source = Join-Path \$projectRoot 'standalone'
 \$dest = Join-Path \$tempRoot 'standalone'
 New-Item -ItemType Directory -Path \$dest -Force | Out-Null
-robocopy \$source \$dest /E /XD (Join-Path \$source '.git') (Join-Path \$source 'build') (Join-Path \$source 'logs') /XF '.DS_Store' '.env' /NJH /NJS /NDL /NFL /NC /NS | Out-Null
+robocopy \$source \$dest /E /XD (Join-Path \$source '.git') (Join-Path \$source 'build') (Join-Path \$source 'logs') /XF '.DS_Store' /NJH /NJS /NDL /NFL /NC /NS | Out-Null
 if (\$LASTEXITCODE -ge 8) { throw 'robocopy failed' }
 Compress-Archive -Path \$dest -DestinationPath \$packagePath -Force
 Remove-Item -Path \$tempRoot -Recurse -Force -ErrorAction SilentlyContinue
@@ -284,7 +284,6 @@ else
       -x "standalone/logs/*" \
       -x "standalone/.DS_Store" \
       -x "standalone/**/.DS_Store" \
-      -x "standalone/.env" \
       -q
 
     PACKAGE_STATUS=$?
