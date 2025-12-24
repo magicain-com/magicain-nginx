@@ -17,6 +17,7 @@ BUILD_DIR="$PROJECT_ROOT/build"
 OUTPUT_DIR="$STANDALONE_DIR/docker/images"
 
 # 必须指定架构参数：--arch amd64 | --arch arm64
+# 使用 skopeo 拉取镜像，支持跨架构打包（如在 Mac arm64 上打包 amd64 镜像）
 TARGET_ARCH=""
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -37,6 +38,10 @@ done
 
 if [ -z "$TARGET_ARCH" ]; then
   echo -e "${RED}❌ 必须指定架构参数: --arch amd64 | --arch arm64${NC}"
+  echo ""
+  echo "用法示例："
+  echo "  bash scripts/build-standalone.sh --arch amd64   # 打包 x86_64 镜像"
+  echo "  bash scripts/build-standalone.sh --arch arm64   # 打包 ARM64 镜像"
   exit 1
 fi
 
@@ -81,15 +86,36 @@ echo -e "${BLUE}Standalone Deployment Package Builder${NC}"
 echo -e "${BLUE}================================${NC}"
 echo ""
 
-# 步骤 1: 加载环境变量
+# 步骤 1: 加载环境变量并检查工具
 echo -e "${YELLOW}[1/4] 加载配置...${NC}"
 echo ""
 
+# 检查 skopeo 是否安装
+if ! command -v skopeo &> /dev/null; then
+    echo -e "${RED}❌ skopeo 未安装${NC}"
+    echo ""
+    echo "请先安装 skopeo："
+    echo "  - macOS: brew install skopeo"
+    echo "  - Ubuntu/Debian: sudo apt-get install skopeo"
+    echo "  - CentOS/RHEL: sudo yum install skopeo"
+    echo ""
+    echo "skopeo 用于跨架构拉取镜像，解决 Mac 上打包非本机架构镜像的问题。"
+    exit 1
+fi
+echo -e "${GREEN}✅ skopeo 已安装: $(skopeo --version | head -1)${NC}"
+
 ENV_FILE="$PROJECT_ROOT/.env.standalone"
+SKOPEO_CREDS=""
 if [ -f "$ENV_FILE" ]; then
     echo "📝 Loading environment variables from .env.standalone file..."
     export $(grep -v '^#' "$ENV_FILE" | grep -v '^$' | xargs)
     echo -e "${GREEN}✅ 配置加载成功${NC}"
+    
+    # 为 skopeo 准备凭据参数
+    if [ -n "$DOCKER_REGISTRY_USERNAME" ] && [ -n "$DOCKER_REGISTRY_PASSWORD" ]; then
+        SKOPEO_CREDS="--src-creds ${DOCKER_REGISTRY_USERNAME}:${DOCKER_REGISTRY_PASSWORD}"
+        echo -e "${GREEN}✅ Docker 凭据已配置${NC}"
+    fi
 else
     echo -e "${YELLOW}⚠️  未找到 .env.standalone 文件${NC}"
     echo "   如需拉取私有镜像，请创建 .env.standalone 并配置 Docker 凭据"
@@ -97,66 +123,72 @@ fi
 
 echo ""
 
-# Docker login if credentials are provided
-if [ -n "$DOCKER_REGISTRY_USERNAME" ] && [ -n "$DOCKER_REGISTRY_PASSWORD" ] && [ -n "$DOCKER_REGISTRY_URL" ]; then
-    echo "🔐 Logging into Docker registry: $DOCKER_REGISTRY_URL"
-    if echo "$DOCKER_REGISTRY_PASSWORD" | docker login "$DOCKER_REGISTRY_URL" -u "$DOCKER_REGISTRY_USERNAME" --password-stdin > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ Successfully logged into Docker registry${NC}"
-    else
-        echo -e "${YELLOW}⚠️  Warning: Failed to login to Docker registry${NC}"
-        echo "    Continuing anyway, but private images may fail to pull..."
-    fi
-    echo ""
-else
-    echo "ℹ️  No Docker registry credentials found"
-    echo "   Public images will be pulled without authentication"
-    echo ""
-fi
-
-# 步骤 2: 拉取并保存 Docker 镜像
-echo -e "${YELLOW}[2/4] 拉取并保存 Docker 镜像...${NC}"
+# 步骤 2: 拉取并保存 Docker 镜像（使用 skopeo）
+echo -e "${YELLOW}[2/4] 拉取并保存 Docker 镜像（使用 skopeo）...${NC}"
 echo ""
 
 # Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"
 
-echo "📦 Target platform: $PULL_LABEL"
+# 清理旧的 tar 文件（skopeo 不支持覆盖现有文件）
+if ls "$OUTPUT_DIR"/*.tar 1> /dev/null 2>&1; then
+    echo "🧹 清理旧的镜像包..."
+    rm -f "$OUTPUT_DIR"/*.tar
+    echo -e "${GREEN}✅ 旧镜像包已清理${NC}"
+    echo ""
+fi
+
+echo "📦 Target platform: linux/$PULL_LABEL"
 echo "📁 Output directory: $OUTPUT_DIR"
 echo ""
 
 # Detect current system architecture
 ARCH=$(uname -m)
 echo "🖥️  System architecture: $ARCH"
+if [ "$ARCH" = "arm64" ] && [ "$TARGET_ARCH" = "amd64" ]; then
+    echo -e "${BLUE}ℹ️  跨架构打包: 在 ARM64 主机上打包 AMD64 镜像${NC}"
+elif [ "$ARCH" = "x86_64" ] && [ "$TARGET_ARCH" = "arm64" ]; then
+    echo -e "${BLUE}ℹ️  跨架构打包: 在 AMD64 主机上打包 ARM64 镜像${NC}"
+fi
 echo ""
 
-echo "🔄 Pulling and saving images..."
-echo "ℹ️  Pulling architecture: $TARGET_ARCH"
+echo "🔄 使用 skopeo 拉取并保存镜像..."
+echo "ℹ️  目标架构: $TARGET_ARCH"
 echo ""
 
 SAVED_COUNT=0
 TOTAL_COUNT=${#IMAGES[@]}
 
 for IMAGE in "${IMAGES[@]}"; do
-  echo "⏳ [$((SAVED_COUNT+1))/$TOTAL_COUNT] Pulling: $IMAGE"
-  
-  # 单架构拉取
-  if docker pull --platform "linux/$TARGET_ARCH" "$IMAGE"; then
-    echo "✅ Successfully pulled ($TARGET_ARCH): $IMAGE"
-  else
-    echo -e "${RED}❌ Failed to pull ($TARGET_ARCH): $IMAGE${NC}"
-    exit 1
-  fi
+  echo "⏳ [$((SAVED_COUNT+1))/$TOTAL_COUNT] 处理镜像: $IMAGE"
   
   # Generate output filename
   OUTPUT_FILE="$OUTPUT_DIR/$(generate_filename "$IMAGE")"
   
-  echo "💾 Saving to: $(basename "$OUTPUT_FILE")"
-  if docker save -o "$OUTPUT_FILE" "$IMAGE"; then
+  # 使用 skopeo copy 直接从 registry 下载指定架构的镜像到本地 tar 文件
+  # --override-arch 指定架构
+  # docker:// 是源（远程 registry）
+  # docker-archive: 是目标（本地 tar 文件）
+  echo "💾 Downloading and saving to: $(basename "$OUTPUT_FILE")"
+  
+  # 构建 skopeo 命令
+  SKOPEO_CMD="skopeo copy --override-arch $TARGET_ARCH --override-os linux"
+  
+  # 添加凭据（如果有）
+  if [ -n "$SKOPEO_CREDS" ]; then
+    SKOPEO_CMD="$SKOPEO_CMD $SKOPEO_CREDS"
+  fi
+  
+  # 添加源和目标
+  # docker-archive 格式: docker-archive:/path/to/file.tar:image:tag
+  SKOPEO_CMD="$SKOPEO_CMD docker://$IMAGE docker-archive:$OUTPUT_FILE:$IMAGE"
+  
+  if eval $SKOPEO_CMD; then
     FILE_SIZE=$(ls -lh "$OUTPUT_FILE" | awk '{print $5}')
-    echo -e "${GREEN}✅ Successfully saved: $(basename "$OUTPUT_FILE") ($FILE_SIZE)${NC}"
+    echo -e "${GREEN}✅ Successfully saved ($TARGET_ARCH): $(basename "$OUTPUT_FILE") ($FILE_SIZE)${NC}"
     ((++SAVED_COUNT))
   else
-    echo -e "${RED}❌ Failed to save: $IMAGE${NC}"
+    echo -e "${RED}❌ Failed to download/save: $IMAGE${NC}"
     exit 1
   fi
   echo ""
@@ -279,6 +311,7 @@ echo "📦 部署包信息:"
 echo "   文件名: $(basename $PACKAGE_PATH)"
 echo "   路径: $PACKAGE_PATH"
 echo "   大小: $PACKAGE_SIZE"
+echo "   架构: $TARGET_ARCH"
 echo ""
 
 # 显示构建目录中的所有包
@@ -289,6 +322,8 @@ echo ""
 echo -e "${BLUE}================================${NC}"
 echo -e "${BLUE}部署说明${NC}"
 echo -e "${BLUE}================================${NC}"
+echo ""
+echo -e "${YELLOW}⚠️  注意: 此部署包仅适用于 $TARGET_ARCH 架构的服务器${NC}"
 echo ""
 echo "1. 传输到目标服务器:"
 echo "   scp $(basename $PACKAGE_PATH) root@your-server-ip:/root/"
@@ -304,4 +339,3 @@ echo ""
 echo -e "${YELLOW}💡 提示: 如需清理旧的部署包，可以运行:${NC}"
 echo "   rm $BUILD_DIR/standalone-deployment-*.zip"
 echo ""
-

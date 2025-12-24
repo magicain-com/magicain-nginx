@@ -157,7 +157,10 @@ For creating a standalone deployment package for air-gapped/offline environments
 
 #### Prerequisites
 
-- Docker (version 20.10+ recommended for multi-arch support)
+- **skopeo** (用于跨架构拉取镜像，解决 Mac 上打包非本机架构镜像的问题)
+  - macOS: `brew install skopeo`
+  - Ubuntu/Debian: `sudo apt-get install skopeo`
+  - CentOS/RHEL: `sudo yum install skopeo`
 - bash and zip command (Windows users: install Git Bash)
 - Access to private Docker registry (if pulling private images)
 
@@ -182,8 +185,7 @@ bash scripts/build-standalone.sh --arch arm64   # 打包 ARM64
 
 The build script automatically:
 - ✅ Loads credentials from `.env.standalone`
-- ✅ Logs into Docker registry
-- ✅ Pulls Docker images for specified arch (`--platform linux/amd64` or `linux/arm64`)
+- ✅ Uses **skopeo** to pull images (supports cross-architecture, e.g., pull amd64 on Mac arm64)
 - ✅ Saves images to `standalone/docker/images/`
 - ✅ Packages everything into a dated `.zip` file in `build/` directory (arch suffix)
 
