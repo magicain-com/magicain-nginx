@@ -1,0 +1,50 @@
+name: Build Standalone Package
+
+on:
+  workflow_dispatch:
+    inputs:
+      arch:
+        description: 'Target architecture'
+        required: true
+        type: choice
+        options:
+          - amd64
+          - arm64
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Install skopeo
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y skopeo
+          skopeo --version
+      
+      - name: Install zip
+        run: sudo apt-get install -y zip
+      
+      - name: Create .env.standalone
+        run: |
+          cat > .env.standalone << EOF
+          DOCKER_REGISTRY_URL=${{ secrets.DOCKER_REGISTRY_URL }}
+          DOCKER_REGISTRY_USERNAME=${{ secrets.DOCKER_REGISTRY_USERNAME }}
+          DOCKER_REGISTRY_PASSWORD=${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+          EOF
+      
+      - name: Build standalone package
+        run: |
+          chmod +x scripts/build-standalone.sh
+          bash scripts/build-standalone.sh --arch ${{ inputs.arch }}
+      
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: standalone-deployment-${{ inputs.arch }}
+          path: build/standalone-deployment-*.zip
+          retention-days: 7
+
