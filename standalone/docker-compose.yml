@@ -29,7 +29,7 @@ services:
 
   # Agent UI Frontend
   agent-ui:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:main
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:main-noda
     ports:
       - "8081:8081"
     networks:
