@@ -339,3 +339,7 @@ docker compose exec backend curl http://localhost:8080/actuator/health
 - Check nginx configuration for proper upstream definitions
 
 For detailed troubleshooting, monitoring, and configuration guidance, see [CLAUDE.md](./CLAUDE.md).
+
+## 部署成功后的登录帐号
+
+智能体超管租户  /  agentadmin  / 111111
