@@ -55,8 +55,7 @@ This project provides a complete development and production environment includin
 若只需快速验证 nginx 路由，可直接使用仓库根目录的 `Dockerfile`：
 
 ```bash
-./scripts/start-local.sh              # 默认暴露 http://localhost:8080
-HOST_PORT=8001 ./scripts/start-local.sh   # 自定义对外端口
+./scripts/start-local.sh              # 默认暴露 http://localhost:7070
 ```
 
 脚本会删除历史容器/镜像 → 构建 `magicain-nginx-local` 镜像 → 启动单个 nginx 容器，便于本地调试。
