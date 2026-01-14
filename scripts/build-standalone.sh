@@ -62,9 +62,9 @@ IMAGES=(
   "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:main"
   "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:main-noda"
   "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/user-ui:main"
-  "docker.m.daocloud.io/nginx:1.25-alpine"
-  "docker.m.daocloud.io/pgvector/pgvector:pg16"
-  "docker.m.daocloud.io/redis:7-alpine"
+  "docker.xuanyuan.run/nginx:1.28-alpine"
+  "docker.xuanyuan.run/pgvector/pgvector:pg16"
+  "docker.xuanyuan.run/redis:7-alpine"
 )
 
 # 生成带日期的文件名（包含架构后缀）
@@ -104,22 +104,45 @@ if ! command -v skopeo &> /dev/null; then
 fi
 echo -e "${GREEN}✅ skopeo 已安装: $(skopeo --version | head -1)${NC}"
 
-ENV_FILE="$PROJECT_ROOT/.env.standalone"
-SKOPEO_CREDS=""
-if [ -f "$ENV_FILE" ]; then
-    echo "📝 Loading environment variables from .env.standalone file..."
-    export $(grep -v '^#' "$ENV_FILE" | grep -v '^$' | xargs)
+ENV_FILE=""
+PRIVATE_REGISTRY_HOST=""
+PUBLIC_REGISTRY_HOST=""
+
+# 优先加载 .env.prod，其次 .env.standalone（兼容部署环境变量）
+for candidate in "$PROJECT_ROOT/.env.prod" "$PROJECT_ROOT/.env.standalone"; do
+  if [ -f "$candidate" ]; then
+    ENV_FILE="$candidate"
+    echo "📝 Loading environment variables from $(basename "$candidate")..."
+    # shellcheck disable=SC2046
+    export $(grep -v '^#' "$candidate" | grep -v '^$' | xargs)
     echo -e "${GREEN}✅ 配置加载成功${NC}"
-    
-    # 为 skopeo 准备凭据参数
-    if [ -n "$DOCKER_REGISTRY_USERNAME" ] && [ -n "$DOCKER_REGISTRY_PASSWORD" ]; then
-        SKOPEO_CREDS="--src-creds ${DOCKER_REGISTRY_USERNAME}:${DOCKER_REGISTRY_PASSWORD}"
-        echo -e "${GREEN}✅ Docker 凭据已配置${NC}"
-    fi
-else
-    echo -e "${YELLOW}⚠️  未找到 .env.standalone 文件${NC}"
-    echo "   如需拉取私有镜像，请创建 .env.standalone 并配置 Docker 凭据"
+    break
+  fi
+done
+
+if [ -z "$ENV_FILE" ]; then
+  echo -e "${YELLOW}⚠️  未找到 .env.prod 或 .env.standalone${NC}"
+  echo "   如需拉取私有镜像，请提供包含凭据的 env 文件"
 fi
+
+# 优先调用项目的 docker-login.sh，确保 registry 凭据写入 ~/.docker/config.json
+DOCKER_LOGIN_SCRIPT="$PROJECT_ROOT/scripts/docker-login.sh"
+if [ -x "$DOCKER_LOGIN_SCRIPT" ]; then
+  echo "🔐 Running docker-login.sh to authenticate registries..."
+  if (cd "$PROJECT_ROOT" && "$DOCKER_LOGIN_SCRIPT"); then
+    echo -e "${GREEN}✅ docker-login.sh 完成${NC}"
+  else
+    echo -e "${RED}❌ docker-login.sh 执行失败${NC}"
+    exit 1
+  fi
+else
+  echo -e "${YELLOW}⚠️  未找到可执行的 docker-login.sh，跳过自动登录${NC}"
+fi
+
+PRIVATE_REGISTRY_HOST=$(echo "${PRIVATE_DOCKER_REGISTRY_URL:-}" | sed 's|^https\?://||')
+PUBLIC_REGISTRY_HOST=$(echo "${PUBLIC_DOCKER_REGISTRY_URL:-}" | sed 's|^https\?://||')
+
+echo ""
 
 echo ""
 
@@ -164,6 +187,23 @@ for IMAGE in "${IMAGES[@]}"; do
   
   # Generate output filename
   OUTPUT_FILE="$OUTPUT_DIR/$(generate_filename "$IMAGE")"
+  REGISTRY="${IMAGE%%/*}"
+  CREDS_OPT=""
+
+  # 针对不同 registry 选择对应凭据；否则依赖 ~/.docker/config.json
+  if [ -n "$PRIVATE_REGISTRY_HOST" ] && [ "$REGISTRY" = "$PRIVATE_REGISTRY_HOST" ]; then
+    if [ -n "$PRIVATE_DOCKER_REGISTRY_USERNAME" ] && [ -n "$PRIVATE_DOCKER_REGISTRY_PASSWORD" ]; then
+      CREDS_OPT="--src-creds ${PRIVATE_DOCKER_REGISTRY_USERNAME}:${PRIVATE_DOCKER_REGISTRY_PASSWORD}"
+      echo "   → Using private registry creds for $REGISTRY"
+    fi
+  elif [ -n "$PUBLIC_REGISTRY_HOST" ] && [ "$REGISTRY" = "$PUBLIC_REGISTRY_HOST" ]; then
+    if [ -n "$PUBLIC_DOCKER_REGISTRY_USERNAME" ] && [ -n "$PUBLIC_DOCKER_REGISTRY_PASSWORD" ]; then
+      CREDS_OPT="--src-creds ${PUBLIC_DOCKER_REGISTRY_USERNAME}:${PUBLIC_DOCKER_REGISTRY_PASSWORD}"
+      echo "   → Using public registry creds for $REGISTRY"
+    fi
+  else
+    echo "   → No inline creds for $REGISTRY, will rely on ~/.docker/config.json"
+  fi
   
   # 使用 skopeo copy 直接从 registry 下载指定架构的镜像到本地 tar 文件
   # --override-arch 指定架构
@@ -175,8 +215,8 @@ for IMAGE in "${IMAGES[@]}"; do
   SKOPEO_CMD="skopeo copy --override-arch $TARGET_ARCH --override-os linux"
   
   # 添加凭据（如果有）
-  if [ -n "$SKOPEO_CREDS" ]; then
-    SKOPEO_CMD="$SKOPEO_CMD $SKOPEO_CREDS"
+  if [ -n "$CREDS_OPT" ]; then
+    SKOPEO_CMD="$SKOPEO_CMD $CREDS_OPT"
   fi
   
   # 添加源和目标

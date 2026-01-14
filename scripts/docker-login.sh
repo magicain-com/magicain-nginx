@@ -1,28 +1,47 @@
 #!/bin/bash
+set -e
 
 # Docker Registry Login Script
-# This script handles authentication to private Docker registries
+# Logs into both public and private registries using env files
 
-# Load environment variables
-if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
-fi
-
-# Check if registry credentials are provided
-if [ -z "$DOCKER_REGISTRY_USERNAME" ] || [ -z "$DOCKER_REGISTRY_PASSWORD" ] || [ -z "$DOCKER_REGISTRY_URL" ]; then
-    echo "Warning: Docker registry credentials not found in .env file"
-    echo "Please set DOCKER_REGISTRY_USERNAME, DOCKER_REGISTRY_PASSWORD, and DOCKER_REGISTRY_URL"
-    echo "Attempting to start services without private registry authentication..."
-    exit 0
-fi
-
-# Login to Docker registry
-echo "Logging into Docker registry: $DOCKER_REGISTRY_URL"
-echo "$DOCKER_REGISTRY_PASSWORD" | docker login "$DOCKER_REGISTRY_URL" -u "$DOCKER_REGISTRY_USERNAME" --password-stdin
-
-if [ $? -eq 0 ]; then
-    echo "✅ Successfully logged into Docker registry"
+# Load variables from .env.prod only
+if [ -f ".env.prod" ]; then
+  # shellcheck disable=SC2046
+  export $(grep -v '^#' ".env.prod" | grep -v '^$' | xargs)
+  echo "Loaded env file: .env.prod"
 else
-    echo "❌ Failed to login to Docker registry"
-    exit 1
+  echo "❌ .env.prod not found"
+  exit 1
 fi
+
+login_registry() {
+  local name="$1"
+  local url="$2"
+  local user="$3"
+  local pass="$4"
+
+  if [ -z "$url" ] || [ -z "$user" ] || [ -z "$pass" ]; then
+    echo "❌ Missing credentials for ${name} registry (URL/User/Password required)"
+    exit 1
+  fi
+
+  echo "Logging into ${name} registry: ${url}"
+  if echo "$pass" | docker login "$url" -u "$user" --password-stdin; then
+    echo "✅ ${name} registry login succeeded"
+  else
+    echo "❌ ${name} registry login failed"
+    exit 1
+  fi
+}
+
+# Public registry
+login_registry "Public" \
+  "$PUBLIC_DOCKER_REGISTRY_URL" \
+  "$PUBLIC_DOCKER_REGISTRY_USERNAME" \
+  "$PUBLIC_DOCKER_REGISTRY_PASSWORD"
+
+# Private registry
+login_registry "Private" \
+  "$PRIVATE_DOCKER_REGISTRY_URL" \
+  "$PRIVATE_DOCKER_REGISTRY_USERNAME" \
+  "$PRIVATE_DOCKER_REGISTRY_PASSWORD"

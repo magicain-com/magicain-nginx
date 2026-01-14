@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Redis cache + session store (backend stack)
   redis:
-    image: docker.m.daocloud.io/redis:7-alpine
+    image: docker.xuanyuan.run/redis:7-alpine
     restart: unless-stopped
     command: >
       redis-server --appendonly yes --requirepass ${REDIS_AUTH}

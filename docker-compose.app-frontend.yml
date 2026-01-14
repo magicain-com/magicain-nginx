@@ -44,7 +44,7 @@ services:
 
   # MinIO - S3 Compatible Storage for Langfuse
   # minio:
-  #   image: docker.m.daocloud.io/minio/minio
+  #   image: docker.xuanyuan.run/minio/minio
   #   restart: unless-stopped
   #   entrypoint: sh
   #   command: -c 'mkdir -p /data/langfuse && minio server --address ":9000" --console-address ":9001" /data'
@@ -67,7 +67,7 @@ services:
 
   # Langfuse - AI Agent Monitoring
   # langfuse-worker:
-  #   image: docker.m.daocloud.io/langfuse/langfuse-worker:3
+  #   image: docker.xuanyuan.run/langfuse/langfuse-worker:3
   #   restart: unless-stopped
   #   depends_on: &langfuse-depends-on
   #     minio:
@@ -125,7 +125,7 @@ services:
   #     - magicain-frontend
 
   # langfuse-web:
-  #   image: docker.m.daocloud.io/langfuse/langfuse:3
+  #   image: docker.xuanyuan.run/langfuse/langfuse:3
   #   restart: unless-stopped
   #   depends_on: *langfuse-depends-on
   #   ports:
@@ -147,7 +147,7 @@ services:
 
   # Prometheus - Metrics Collection
   # prometheus:
-  #   image: docker.m.daocloud.io/prom/prometheus:latest
+  #   image: docker.xuanyuan.run/prom/prometheus:latest
   #   ports:
   #     - "${PROMETHEUS_PORT}:9090"
   #   volumes:
@@ -166,7 +166,7 @@ services:
 
   # Grafana - Metrics Visualization
   # grafana:
-  #   image: docker.m.daocloud.io/grafana/grafana:latest
+  #   image: docker.xuanyuan.run/grafana/grafana:latest
   #   ports:
   #     - "${GRAFANA_PORT}:3000"
   #   volumes:
@@ -181,7 +181,7 @@ services:
 
   # Node Exporter - System Metrics
   # node-exporter:
-  #   image: docker.m.daocloud.io/prom/node-exporter:latest
+  #   image: docker.xuanyuan.run/prom/node-exporter:latest
   #   volumes:
   #     - /proc:/host/proc:ro
   #     - /sys:/host/sys:ro

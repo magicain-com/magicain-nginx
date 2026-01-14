@@ -58,7 +58,7 @@ services:
 
   # PostgreSQL with PgVector
   postgres:
-    image: docker.m.daocloud.io/pgvector/pgvector:pg16
+    image: docker.xuanyuan.run/pgvector/pgvector:pg16
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U magicain -d magicain"]
@@ -79,7 +79,7 @@ services:
 
   # Redis
   redis:
-    image: docker.m.daocloud.io/redis:7-alpine
+    image: docker.xuanyuan.run/redis:7-alpine
     restart: unless-stopped
     command: >
       redis-server --appendonly yes

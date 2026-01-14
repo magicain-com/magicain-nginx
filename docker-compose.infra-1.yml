@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # PostgreSQL with PgVector (dedicated infra-1 server)
   postgres:
-    image: docker.m.daocloud.io/pgvector/pgvector:pg16
+    image: docker.xuanyuan.run/pgvector/pgvector:pg16
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U magicain"]
