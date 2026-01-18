@@ -1,0 +1,40 @@
+receivers:
+  otlp:
+    protocols:
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 5s
+    limit_mib: 512
+    spike_limit_mib: 128
+
+  # 只保留“Agent/LLM相关”的 span（避免普通 http span 全进 Langfuse）
+  # 说明：
+  # - Spring AI 的模型调用 span 会带 gen_ai.* 属性（如 gen_ai.system / gen_ai.operation.name）:contentReference[oaicite:3]{index=3}
+  # - 为避免“没有 root span 导致 trace 不完整”，建议你在 Agent 入口创建一个 root span 并设置 langfuse.trace.name（见后文）；
+  # - Langfuse 也明确提示：span 级过滤可能导致不完整 trace，且需要 root span :contentReference[oaicite:4]{index=4}
+  filter/agent_only:
+    error_mode: ignore
+    traces:
+      span:
+        - |
+          attributes["gen_ai.system"] == nil
+          and attributes["gen_ai.operation.name"] == nil
+          and attributes["langfuse.trace.name"] == nil
+
+  batch:
+
+exporters:
+  otlphttp/langfuse:
+    endpoint: "${LANGFUSE_OTEL_ENDPOINT}"   # 例如 https://cloud.langfuse.com/api/public/otel 或 http://langfuse:3000/api/public/otel
+    headers:
+      Authorization: "Basic ${AUTH_STRING}"
+
+service:
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, filter/agent_only, batch]
+      exporters: [otlphttp/langfuse]

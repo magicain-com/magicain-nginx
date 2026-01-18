@@ -56,6 +56,7 @@ jobs:
           cp docker-compose.infra-2.yml deploy_bundle/
           cp docker-compose.app-backend.yml deploy_bundle/
           cp docker-compose.app-frontend.yml deploy_bundle/
+          cp -R scripts deploy_bundle/
           tar czf deploy-bundle.tar.gz -C deploy_bundle .
           rm -rf deploy_bundle
 
@@ -104,7 +105,5 @@ jobs:
             else
               echo "Using .env directly (no copy needed)"
             fi
-            echo "${{ secrets.DOCKER_REGISTRY_PASSWORD }}" | docker login "${{ secrets.DOCKER_REGISTRY }}" -u "${{ secrets.DOCKER_REGISTRY_USER }}" --password-stdin
-            docker compose -f docker-compose.app-backend.yml pull
-            docker compose -f docker-compose.app-backend.yml up -d --remove-orphans --force-recreate
+            bash scripts/start-prod.sh docker-compose.app-backend.yml
 

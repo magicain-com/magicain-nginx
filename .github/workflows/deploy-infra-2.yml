@@ -56,6 +56,7 @@ jobs:
           cp docker-compose.infra-2.yml deploy_bundle/
           cp docker-compose.app-backend.yml deploy_bundle/
           cp docker-compose.app-frontend.yml deploy_bundle/
+          cp -R scripts deploy_bundle/
           tar czf deploy-bundle.tar.gz -C deploy_bundle .
           rm -rf deploy_bundle
 
@@ -104,6 +105,5 @@ jobs:
             else
               echo "Using .env directly (no copy needed)"
             fi
-            docker compose -f docker-compose.infra-2.yml pull
-            docker compose -f docker-compose.infra-2.yml up -d --remove-orphans
+            bash scripts/start-prod.sh docker-compose.infra-2.yml
 
