@@ -45,8 +45,10 @@ for file in "${COMPOSE_FILES[@]}"; do
 done
 
 # Start production services
+echo "🔧 Pulling production images..."
+docker compose --env-file "$ENV_FILE" "${COMPOSE_ARGS[@]}" pull
 echo "🔧 Starting production environment services..."
-docker compose --env-file "$ENV_FILE" "${COMPOSE_ARGS[@]}" up -d
+docker compose --env-file "$ENV_FILE" "${COMPOSE_ARGS[@]}" up -d --remove-orphans --force-recreate
 
 # Check service status
 echo "📊 Service Status:"
