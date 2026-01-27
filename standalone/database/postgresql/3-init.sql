@@ -274,8 +274,8 @@ CREATE TRIGGER set_update_time_aibi_dataset_table_relation
 -- 创建表
 CREATE TABLE aibi_dataset (
                               id BIGINT NOT NULL PRIMARY KEY, -- 主键
-                              create_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                              update_time TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              create_time TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+                              update_time TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
                               creator VARCHAR(64) DEFAULT '',
                               updater VARCHAR(64) DEFAULT '',
                               deleted SMALLINT NOT NULL DEFAULT 0,
@@ -1410,6 +1410,7 @@ CREATE TABLE agent_plan_sop (
                                 agent_id        VARCHAR(64), -- 归属的agent, 确定作用的scope, 可能是agent也可能是子agent
                                 sop_name        VARCHAR(64), -- sop的名字
                                 sop_desc        VARCHAR(512), -- sop的描述
+                                sop_tags        VARCHAR(256), -- sop的业务标签
                                 content         TEXT -- sop内容 (PostgreSQL 中 TEXT 没有长度限制，相当于 MySQL 的 LONGTEXT)
 );
 
@@ -1425,6 +1426,7 @@ COMMENT ON COLUMN agent_plan_sop.tenant_id IS '租户ID';
 COMMENT ON COLUMN agent_plan_sop.agent_id IS '归属的agent, 确定作用的scope, 可能是agent也可能是子agent';
 COMMENT ON COLUMN agent_plan_sop.sop_name IS 'sop的名字';
 COMMENT ON COLUMN agent_plan_sop.sop_desc IS 'sop的描述';
+COMMENT ON COLUMN agent_plan_sop.sop_tags IS 'sop的业务标签';
 COMMENT ON COLUMN agent_plan_sop.content IS 'sop内容';
 
 
