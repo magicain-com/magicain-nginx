@@ -17,7 +17,7 @@ services:
   
   # Admin UI Frontend
   admin-ui:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:main
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:latest
     ports:
       - "8080:8080"
     networks:
@@ -26,7 +26,7 @@ services:
 
   # Agent UI Frontend
   agent-ui:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:main
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:latest
     ports:
       - "8081:8081"
     networks:
@@ -35,7 +35,7 @@ services:
 
   # User UI Frontend
   user-ui:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/user-ui:main
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/user-ui:latest
     ports:
       - "8082:8082"
     networks:

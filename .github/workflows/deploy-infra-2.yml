@@ -3,8 +3,7 @@ name: Deploy infra-2 clean
 on:
   push:
     tags:
-      - latest
-      - "*.*.*"
+      - "v*.*.*"
   workflow_dispatch:
 
 concurrency:

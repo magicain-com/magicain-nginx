@@ -10,6 +10,10 @@ on:
         options:
           - amd64
           - arm64
+      version:
+        description: 'Image tag version (default: latest)'
+        required: false
+        default: latest
 
 jobs:
   build:
@@ -31,9 +35,13 @@ jobs:
       - name: Create .env.standalone
         run: |
           cat > .env.standalone << EOF
-          DOCKER_REGISTRY_URL=${{ secrets.DOCKER_REGISTRY }}
-          DOCKER_REGISTRY_USERNAME=${{ secrets.DOCKER_REGISTRY_USER }}
-          DOCKER_REGISTRY_PASSWORD=${{ secrets.DOCKER_REGISTRY_PASSWORD }}
+          PUBLIC_DOCKER_REGISTRY_URL=${{ secrets.PUBLIC_DOCKER_REGISTRY }}
+          PUBLIC_DOCKER_REGISTRY_USERNAME=${{ secrets.PUBLIC_DOCKER_REGISTRY_USER }}
+          PUBLIC_DOCKER_REGISTRY_PASSWORD=${{ secrets.PUBLIC_DOCKER_REGISTRY_PASSWORD }}
+          PRIVATE_DOCKER_REGISTRY_URL=${{ secrets.PRIVATE_DOCKER_REGISTRY }}
+          PRIVATE_DOCKER_REGISTRY_USERNAME=${{ secrets.PRIVATE_DOCKER_REGISTRY_USER }}
+          PRIVATE_DOCKER_REGISTRY_PASSWORD=${{ secrets.PRIVATE_DOCKER_REGISTRY_PASSWORD }}
+          IMAGE_TAG=${{ inputs.version }}
           EOF
       
       - name: Build standalone package

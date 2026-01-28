@@ -21,7 +21,7 @@ services:
 
   # Cloud backend service
   cloud:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:main
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:latest
     restart: unless-stopped
     depends_on:
       redis:
@@ -37,7 +37,7 @@ services:
 
   # Code Interpreter
   code-interpreter:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/jupyter-code-interpreter:main
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/jupyter-code-interpreter:latest
     restart: always
     ports:
       - "5007:5007"
@@ -46,7 +46,7 @@ services:
     networks:
       - magicain-backend
   jupyter-kernel:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/jupyter-code-interpreter-jupyter-kernel:main
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/jupyter-code-interpreter-jupyter-kernel:latest
     restart: always
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock

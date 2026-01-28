@@ -4,13 +4,20 @@ set -e
 # Docker Registry Login Script
 # Logs into both public and private registries using env files
 
-# Load variables from .env.prod only
-if [ -f ".env.prod" ]; then
-  # shellcheck disable=SC2046
-  export $(grep -v '^#' ".env.prod" | grep -v '^$' | xargs)
-  echo "Loaded env file: .env.prod"
-else
-  echo "❌ .env.prod not found"
+# Load variables from .env.prod first, then .env.standalone
+ENV_FILE=""
+for candidate in ".env.prod" ".env.standalone"; do
+  if [ -f "$candidate" ]; then
+    ENV_FILE="$candidate"
+    # shellcheck disable=SC2046
+    export $(grep -v '^#' "$candidate" | grep -v '^$' | xargs)
+    echo "Loaded env file: $candidate"
+    break
+  fi
+done
+
+if [ -z "$ENV_FILE" ]; then
+  echo "❌ .env.prod or .env.standalone not found"
   exit 1
 fi
 

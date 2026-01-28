@@ -56,17 +56,6 @@ esac
 PULL_LABEL="$TARGET_ARCH"
 ZIP_ARCH_SUFFIX="$TARGET_ARCH"
 
-# Docker 镜像列表
-IMAGES=(
-  "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:main"
-  "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:main"
-  "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:main-noda"
-  "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/user-ui:main"
-  "docker.xuanyuan.run/nginx:1.28-alpine"
-  "docker.xuanyuan.run/pgvector/pgvector:pg16"
-  "docker.xuanyuan.run/redis:7-alpine"
-)
-
 # 生成带日期的文件名（包含架构后缀）
 DATE_STAMP=$(date +%Y%m%d-%H%M%S)
 PACKAGE_NAME="standalone-deployment-${ZIP_ARCH_SUFFIX}-${DATE_STAMP}.zip"
@@ -141,6 +130,22 @@ fi
 
 PRIVATE_REGISTRY_HOST=$(echo "${PRIVATE_DOCKER_REGISTRY_URL:-}" | sed 's|^https\?://||')
 PUBLIC_REGISTRY_HOST=$(echo "${PUBLIC_DOCKER_REGISTRY_URL:-}" | sed 's|^https\?://||')
+
+echo ""
+
+# 镜像版本号（可通过 env 传入），默认 latest
+IMAGE_TAG="${IMAGE_TAG:-latest}"
+
+# Docker 镜像列表
+IMAGES=(
+  "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:${IMAGE_TAG}"
+  "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:${IMAGE_TAG}"
+  "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:${IMAGE_TAG}"
+  "crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/user-ui:${IMAGE_TAG}"
+  "docker.xuanyuan.run/nginx:1.28-alpine"
+  "docker.xuanyuan.run/pgvector/pgvector:pg16"
+  "docker.xuanyuan.run/redis:7-alpine"
+)
 
 echo ""
 
@@ -298,7 +303,6 @@ else
     exit 1
 fi
 
-echo ""
 
 # 显示打包结果
 echo -e "${BLUE}================================${NC}"
