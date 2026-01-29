@@ -20,8 +20,8 @@ else
     exit 1
 fi
 
-# Run Docker login script
-./scripts/docker-login.sh
+# Run Docker login script (use same env file as compose)
+./scripts/docker-login.sh --env-file "$ENV_FILE"
 
 if [ $? -ne 0 ]; then
     echo "❌ Docker login failed! Cannot start production without registry access."

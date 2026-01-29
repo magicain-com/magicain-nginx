@@ -4,21 +4,48 @@ set -e
 # Docker Registry Login Script
 # Logs into both public and private registries using env files
 
-# Load variables from .env.prod first, then .env.standalone
+# Optional env file override
 ENV_FILE=""
-for candidate in ".env.prod" ".env.standalone"; do
-  if [ -f "$candidate" ]; then
-    ENV_FILE="$candidate"
-    # shellcheck disable=SC2046
-    export $(grep -v '^#' "$candidate" | grep -v '^$' | xargs)
-    echo "Loaded env file: $candidate"
-    break
-  fi
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --env-file=*)
+      ENV_FILE="${1#*=}"
+      shift
+      ;;
+    --env-file)
+      ENV_FILE="$2"
+      shift 2
+      ;;
+    *)
+      echo "⚠️  忽略未知参数: $1"
+      shift
+      ;;
+  esac
 done
 
-if [ -z "$ENV_FILE" ]; then
-  echo "❌ .env.prod or .env.standalone not found"
-  exit 1
+# If required vars are already set, skip loading from file
+if [ -n "$PUBLIC_DOCKER_REGISTRY_URL" ] && [ -n "$PUBLIC_DOCKER_REGISTRY_USERNAME" ] && [ -n "$PUBLIC_DOCKER_REGISTRY_PASSWORD" ] \
+  && [ -n "$PRIVATE_DOCKER_REGISTRY_URL" ] && [ -n "$PRIVATE_DOCKER_REGISTRY_USERNAME" ] && [ -n "$PRIVATE_DOCKER_REGISTRY_PASSWORD" ]; then
+  echo "Using registry credentials from environment variables"
+else
+  if [ -z "$ENV_FILE" ]; then
+    if [ -f ".env" ]; then
+      ENV_FILE=".env"
+    elif [ -f ".env.prod" ]; then
+      ENV_FILE=".env.prod"
+    elif [ -f ".env.standalone" ]; then
+      ENV_FILE=".env.standalone"
+    fi
+  fi
+
+  if [ -z "$ENV_FILE" ] || [ ! -f "$ENV_FILE" ]; then
+    echo "❌ .env file not found and registry credentials not provided"
+    exit 1
+  fi
+
+  # shellcheck disable=SC2046
+  export $(grep -v '^#' "$ENV_FILE" | grep -v '^$' | xargs)
+  echo "Loaded env file: $ENV_FILE"
 fi
 
 login_registry() {

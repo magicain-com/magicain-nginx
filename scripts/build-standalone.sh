@@ -97,28 +97,24 @@ ENV_FILE=""
 PRIVATE_REGISTRY_HOST=""
 PUBLIC_REGISTRY_HOST=""
 
-# 优先加载 .env.prod，其次 .env.standalone（兼容部署环境变量）
-for candidate in "$PROJECT_ROOT/.env.prod" "$PROJECT_ROOT/.env.standalone"; do
-  if [ -f "$candidate" ]; then
-    ENV_FILE="$candidate"
-    echo "📝 Loading environment variables from $(basename "$candidate")..."
-    # shellcheck disable=SC2046
-    export $(grep -v '^#' "$candidate" | grep -v '^$' | xargs)
-    echo -e "${GREEN}✅ 配置加载成功${NC}"
-    break
-  fi
-done
-
-if [ -z "$ENV_FILE" ]; then
-  echo -e "${YELLOW}⚠️  未找到 .env.prod 或 .env.standalone${NC}"
-  echo "   如需拉取私有镜像，请提供包含凭据的 env 文件"
+# 只加载 .env.standalone（standalone 环境）
+ENV_FILE="$PROJECT_ROOT/.env.standalone"
+if [ -f "$ENV_FILE" ]; then
+  echo "📝 Loading environment variables from $(basename "$ENV_FILE")..."
+  # shellcheck disable=SC2046
+  export $(grep -v '^#' "$ENV_FILE" | grep -v '^$' | xargs)
+  echo -e "${GREEN}✅ 配置加载成功${NC}"
+else
+  echo -e "${RED}❌ 未找到 .env.standalone${NC}"
+  echo "   standalone 环境请提供包含凭据的 .env.standalone"
+  exit 1
 fi
 
 # 优先调用项目的 docker-login.sh，确保 registry 凭据写入 ~/.docker/config.json
 DOCKER_LOGIN_SCRIPT="$PROJECT_ROOT/scripts/docker-login.sh"
 if [ -x "$DOCKER_LOGIN_SCRIPT" ]; then
   echo "🔐 Running docker-login.sh to authenticate registries..."
-  if (cd "$PROJECT_ROOT" && "$DOCKER_LOGIN_SCRIPT"); then
+  if (cd "$PROJECT_ROOT" && "$DOCKER_LOGIN_SCRIPT" --env-file "$ENV_FILE"); then
     echo -e "${GREEN}✅ docker-login.sh 完成${NC}"
   else
     echo -e "${RED}❌ docker-login.sh 执行失败${NC}"
