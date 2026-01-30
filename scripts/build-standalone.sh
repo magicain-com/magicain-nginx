@@ -56,11 +56,6 @@ esac
 PULL_LABEL="$TARGET_ARCH"
 ZIP_ARCH_SUFFIX="$TARGET_ARCH"
 
-# 生成带日期的文件名（包含架构后缀）
-DATE_STAMP=$(date +%Y%m%d-%H%M%S)
-PACKAGE_NAME="standalone-deployment-${ZIP_ARCH_SUFFIX}-${DATE_STAMP}.zip"
-PACKAGE_PATH="$BUILD_DIR/$PACKAGE_NAME"
-
 # Function to generate filename from image name
 generate_filename() {
   local IMAGE=$1
@@ -144,6 +139,11 @@ IMAGES=(
 )
 
 echo ""
+
+# 生成带日期的文件名（包含架构和镜像版本）
+DATE_STAMP=$(date +%Y%m%d-%H%M%S)
+PACKAGE_NAME="standalone-deployment-${ZIP_ARCH_SUFFIX}-${IMAGE_TAG}-${DATE_STAMP}.zip"
+PACKAGE_PATH="$BUILD_DIR/$PACKAGE_NAME"
 
 echo ""
 
@@ -263,80 +263,84 @@ echo -e "${GREEN}✅ 构建目录已创建: $BUILD_DIR${NC}"
 
 echo ""
 
-# 步骤 4: 打包 standalone 目录
+# 步骤 4: 打包 standalone 目录（可选）
 echo -e "${YELLOW}[4/4] 打包部署文件...${NC}"
 echo ""
 
-cd "$PROJECT_ROOT"
-
-# 检查 zip 命令是否可用
-if ! command -v zip &> /dev/null; then
-    echo -e "${RED}❌ zip 命令未找到${NC}"
+if [ "${SKIP_ZIP:-false}" = "true" ]; then
+    echo -e "${YELLOW}⚠️  跳过打包（SKIP_ZIP=true）${NC}"
     echo ""
-    echo "请安装 zip 工具："
-    echo "  - Ubuntu/Debian: sudo apt-get install zip"
-    echo "  - CentOS/RHEL: sudo yum install zip"
-    echo "  - macOS: 系统自带"
-    exit 1
-fi
-
-# 打包文件，排除不必要的内容
-echo "正在打包，请稍候..."
-zip -r "$PACKAGE_PATH" standalone/ \
-  -x "standalone/.git/*" \
-  -x "standalone/build/*" \
-  -x "standalone/logs/*" \
-  -x "standalone/.DS_Store" \
-  -x "standalone/**/.DS_Store" \
-  -q
-
-PACKAGE_STATUS=$?
-
-if [ $PACKAGE_STATUS -eq 0 ]; then
-    echo -e "${GREEN}✅ 打包完成${NC}"
 else
-    echo -e "${RED}❌ 打包失败${NC}"
-    exit 1
+    cd "$PROJECT_ROOT"
+
+    # 检查 zip 命令是否可用
+    if ! command -v zip &> /dev/null; then
+        echo -e "${RED}❌ zip 命令未找到${NC}"
+        echo ""
+        echo "请安装 zip 工具："
+        echo "  - Ubuntu/Debian: sudo apt-get install zip"
+        echo "  - CentOS/RHEL: sudo yum install zip"
+        echo "  - macOS: 系统自带"
+        exit 1
+    fi
+
+    # 打包文件，排除不必要的内容
+    echo "正在打包，请稍候..."
+    zip -r "$PACKAGE_PATH" standalone/ \
+      -x "standalone/.git/*" \
+      -x "standalone/build/*" \
+      -x "standalone/logs/*" \
+      -x "standalone/.DS_Store" \
+      -x "standalone/**/.DS_Store" \
+      -q
+
+    PACKAGE_STATUS=$?
+
+    if [ $PACKAGE_STATUS -eq 0 ]; then
+        echo -e "${GREEN}✅ 打包完成${NC}"
+    else
+        echo -e "${RED}❌ 打包失败${NC}"
+        exit 1
+    fi
+
+    # 显示打包结果
+    echo -e "${BLUE}================================${NC}"
+    echo -e "${GREEN}✅ 部署包构建成功！${NC}"
+    echo -e "${BLUE}================================${NC}"
+    echo ""
+
+    # 显示文件信息
+    PACKAGE_SIZE=$(du -h "$PACKAGE_PATH" 2>/dev/null | cut -f1)
+    echo "📦 部署包信息:"
+    echo "   文件名: $(basename $PACKAGE_PATH)"
+    echo "   路径: $PACKAGE_PATH"
+    echo "   大小: $PACKAGE_SIZE"
+    echo "   架构: $TARGET_ARCH"
+    echo ""
+
+    # 显示构建目录中的所有包
+    echo "📁 构建目录中的部署包:"
+    ls -lh "$BUILD_DIR"/*.zip 2>/dev/null | awk '{print "   " $9 " (" $5 ")"}' || echo "   (无其他文件)"
+    echo ""
+
+    echo -e "${BLUE}================================${NC}"
+    echo -e "${BLUE}部署说明${NC}"
+    echo -e "${BLUE}================================${NC}"
+    echo ""
+    echo -e "${YELLOW}⚠️  注意: 此部署包仅适用于 $TARGET_ARCH 架构的服务器${NC}"
+    echo ""
+    echo "1. 传输到目标服务器:"
+    echo "   scp $(basename $PACKAGE_PATH) root@your-server-ip:/root/"
+    echo ""
+    echo "2. 在服务器上解压并安装:"
+    echo "   cd /root"
+    echo "   unzip $(basename $PACKAGE_PATH)"
+    echo "   cd standalone"
+    echo "   sudo bash scripts/install-and-start.sh"
+    echo ""
+
+    # 可选：清理旧的部署包
+    echo -e "${YELLOW}💡 提示: 如需清理旧的部署包，可以运行:${NC}"
+    echo "   rm $BUILD_DIR/standalone-deployment-*.zip"
+    echo ""
 fi
-
-
-# 显示打包结果
-echo -e "${BLUE}================================${NC}"
-echo -e "${GREEN}✅ 部署包构建成功！${NC}"
-echo -e "${BLUE}================================${NC}"
-echo ""
-
-# 显示文件信息
-PACKAGE_SIZE=$(du -h "$PACKAGE_PATH" 2>/dev/null | cut -f1)
-echo "📦 部署包信息:"
-echo "   文件名: $(basename $PACKAGE_PATH)"
-echo "   路径: $PACKAGE_PATH"
-echo "   大小: $PACKAGE_SIZE"
-echo "   架构: $TARGET_ARCH"
-echo ""
-
-# 显示构建目录中的所有包
-echo "📁 构建目录中的部署包:"
-ls -lh "$BUILD_DIR"/*.zip 2>/dev/null | awk '{print "   " $9 " (" $5 ")"}' || echo "   (无其他文件)"
-echo ""
-
-echo -e "${BLUE}================================${NC}"
-echo -e "${BLUE}部署说明${NC}"
-echo -e "${BLUE}================================${NC}"
-echo ""
-echo -e "${YELLOW}⚠️  注意: 此部署包仅适用于 $TARGET_ARCH 架构的服务器${NC}"
-echo ""
-echo "1. 传输到目标服务器:"
-echo "   scp $(basename $PACKAGE_PATH) root@your-server-ip:/root/"
-echo ""
-echo "2. 在服务器上解压并安装:"
-echo "   cd /root"
-echo "   unzip $(basename $PACKAGE_PATH)"
-echo "   cd standalone"
-echo "   sudo bash scripts/install-and-start.sh"
-echo ""
-
-# 可选：清理旧的部署包
-echo -e "${YELLOW}💡 提示: 如需清理旧的部署包，可以运行:${NC}"
-echo "   rm $BUILD_DIR/standalone-deployment-*.zip"
-echo ""

@@ -29,9 +29,6 @@ jobs:
           sudo apt-get install -y skopeo
           skopeo --version
       
-      - name: Install zip
-        run: sudo apt-get install -y zip
-      
       - name: Create .env.standalone
         run: |
           cat > .env.standalone << EOF
@@ -47,7 +44,7 @@ jobs:
       - name: Build standalone package
         run: |
           chmod +x scripts/build-standalone.sh
-          bash scripts/build-standalone.sh --arch ${{ inputs.arch }}
+          SKIP_ZIP=true bash scripts/build-standalone.sh --arch ${{ inputs.arch }}
       
       - name: Get package filename
         id: package
