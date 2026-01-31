@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: prod
     env:
-      ENV_FILE_NAME: .env.prod
+      ENV_FILE: .env.prod
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -25,7 +25,7 @@ jobs:
           set -euo pipefail
           rm -rf deploy_bundle deploy-bundle.tar.gz
           mkdir -p deploy_bundle/config
-          ENV_FILE_NAME="${ENV_FILE_NAME:-.env}"
+          ENV_FILE="${ENV_FILE:-.env}"
 
           shopt -s nullglob
           ENV_FILES=( ./.env* )
@@ -40,13 +40,13 @@ jobs:
           for file in "${ENV_FILES[@]}"; do
             base="$(basename "$file")"
             cp "$file" "deploy_bundle/$base"
-            if [ "$base" = "$ENV_FILE_NAME" ]; then
+            if [ "$base" = "$ENV_FILE" ]; then
               FOUND_ENV=true
             fi
           done
 
           if [ "$FOUND_ENV" = false ]; then
-            echo "❌ Required environment file $ENV_FILE_NAME not found." >&2
+            echo "❌ Required environment file $ENV_FILE not found." >&2
             exit 1
           fi
 
@@ -79,7 +79,7 @@ jobs:
             TARGET_DIR="${{ vars.INFRA2_REMOTE_PATH }}"
             TARGET_DIR="${TARGET_DIR:-/opt/magicain}"
             BUNDLE_TAR="/tmp/deploy-bundle.tar.gz"
-            ENV_FILE_NAME="${{ env.ENV_FILE_NAME }}"
+            ENV_FILE="${{ env.ENV_FILE }}"
 
             sudo mkdir -p "$TARGET_DIR"
             sudo chown -R "$USER":"$USER" "$TARGET_DIR"
@@ -94,15 +94,18 @@ jobs:
 
             cd "$TARGET_DIR"
             # Only copy if the source and destination are different files
-            if [ "$ENV_FILE_NAME" != ".env" ]; then
-              if [ -f "$ENV_FILE_NAME" ]; then
-                cp "$ENV_FILE_NAME" .env
+            if [ "$ENV_FILE" != ".env" ]; then
+              if [ -f "$ENV_FILE" ]; then
+                cp "$ENV_FILE" .env
               else
-                echo "Required environment file $ENV_FILE_NAME missing after extraction." >&2
+                echo "Required environment file $ENV_FILE missing after extraction." >&2
                 exit 1
               fi
             else
               echo "Using .env directly (no copy needed)"
             fi
+            export PUBLIC_DOCKER_REGISTRY_URL="${{ secrets.PUBLIC_DOCKER_REGISTRY_URL }}"
+            export PUBLIC_DOCKER_REGISTRY_USERNAME="${{ secrets.PUBLIC_DOCKER_REGISTRY_USERNAME }}"
+            export PUBLIC_DOCKER_REGISTRY_PASSWORD="${{ secrets.PUBLIC_DOCKER_REGISTRY_PASSWORD }}"
             bash scripts/start-prod.sh docker-compose.infra-2.yml
 
