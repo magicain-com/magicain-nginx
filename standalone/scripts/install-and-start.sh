@@ -12,6 +12,36 @@ NC='\033[0m' # No Color
 # 获取脚本所在目录
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 STANDALONE_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+IMAGE_TAG_ARG=""
+
+# Optional version argument (first arg or --version/-v)
+if [ $# -gt 0 ]; then
+    case "$1" in
+        --version=*)
+            IMAGE_TAG_ARG="${1#*=}"
+            shift
+            ;;
+        --version|-v)
+            IMAGE_TAG_ARG="$2"
+            shift 2
+            ;;
+        *)
+            IMAGE_TAG_ARG="$1"
+            shift
+            ;;
+    esac
+fi
+
+if [ -n "$IMAGE_TAG_ARG" ]; then
+    if [[ "$IMAGE_TAG_ARG" =~ ^v ]]; then
+        echo -e "${RED}❌ 版本号请使用 1.2.3 格式，不要带 v 前缀${NC}"
+        exit 1
+    fi
+    if ! [[ "$IMAGE_TAG_ARG" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        echo -e "${RED}❌ 版本号格式无效，应为 1.2.3${NC}"
+        exit 1
+    fi
+fi
 
 echo -e "${BLUE}================================${NC}"
 echo -e "${BLUE}Magicain Standalone 安装启动脚本${NC}"
@@ -225,6 +255,7 @@ if [ ! -f "$ENV_FILE" ]; then
 # PostgreSQL 配置
 POSTGRES_USER=magicain
 POSTGRES_PASSWORD=$RANDOM_PASSWORD
+IMAGE_TAG=${IMAGE_TAG_ARG:-latest}
 EOF
     echo -e "${GREEN}✅ .env 文件已创建${NC}"
     echo -e "${YELLOW}⚠️  请记录 PostgreSQL 配置:${NC}"
@@ -233,6 +264,17 @@ EOF
     echo -e "${YELLOW}⚠️  建议修改 .env 文件中的密码为更安全的密码${NC}"
 else
     echo -e "${GREEN}✅ .env 文件已存在${NC}"
+fi
+
+# Ensure IMAGE_TAG is set (override when provided)
+if [ -n "$IMAGE_TAG_ARG" ]; then
+    if grep -q '^IMAGE_TAG=' "$ENV_FILE"; then
+        sed -i.bak "s/^IMAGE_TAG=.*/IMAGE_TAG=${IMAGE_TAG_ARG}/" "$ENV_FILE"
+    else
+        echo "IMAGE_TAG=${IMAGE_TAG_ARG}" >> "$ENV_FILE"
+    fi
+elif ! grep -q '^IMAGE_TAG=' "$ENV_FILE"; then
+    echo "IMAGE_TAG=latest" >> "$ENV_FILE"
 fi
 
 echo ""

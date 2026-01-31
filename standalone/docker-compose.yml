@@ -20,7 +20,7 @@ services:
 
   # Admin UI Frontend
   admin-ui:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:main
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/admin-ui:${IMAGE_TAG:-latest}
     ports:
       - "8080:8080"
     networks:
@@ -29,7 +29,7 @@ services:
 
   # Agent UI Frontend
   agent-ui:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:main-noda
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/agent-ui:${IMAGE_TAG:-latest}
     ports:
       - "8081:8081"
     networks:
@@ -38,7 +38,7 @@ services:
 
   # User UI Frontend
   user-ui:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/user-ui:main
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/user-ui:${IMAGE_TAG:-latest}
     ports:
       - "8082:8082"
     networks:
@@ -47,7 +47,7 @@ services:
 
   # Cloud Backend
   cloud:
-    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:main
+    image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:${IMAGE_TAG:-latest}
     ports:
       - "48080:48080"
     networks:

@@ -178,11 +178,12 @@ docker compose up -d
 - **后续更新**：数据目录已存在时，**初始化脚本不会重新执行**，所有数据保持不变。
 - **Schema 升级**：如果需要升级数据库结构，必须**手动执行增量 SQL 脚本**。
 
-### 4. Docker 镜像更新机制（`main` tag）
+### 4. Docker 镜像更新机制（`IMAGE_TAG`）
 
-- 镜像使用 `main` tag（无版本号），`docker load` 会覆盖本地同名镜像。
-- `install-and-start.sh` 脚本会使用 `docker compose down --remove-orphans` 和 `docker compose up -d --force-recreate` 来确保容器使用最新的镜像。
-- **强烈推荐使用 `--force-recreate`**，以保证容器更新到最新版本。
+- 镜像使用 `IMAGE_TAG` 控制版本（默认 `latest`）。
+- `install-and-start.sh` 支持版本参数：`--version 1.2.3`（或直接传 `1.2.3`）。
+- `docker compose` 会读取 `.env` 中的 `IMAGE_TAG` 来拉取对应版本镜像。
+- `install-and-start.sh` 会使用 `docker compose down --remove-orphans` 和 `docker compose up -d --force-recreate` 确保容器使用新镜像。
 
 ---
 
@@ -370,22 +371,20 @@ standalone/
 1. **保留旧版本镜像**
    ```bash
    # 在更新前，导出当前镜像作为备份
-   docker save cloud:main > backup/cloud_main_v1.0.tar
+   docker save crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:latest > backup/cloud_latest.tar
    ```
 
-2. **使用具体版本 tag**（如果可能）
+2. **使用具体版本 tag**
    ```yaml
-   # 推荐：使用具体版本
-   image: magictensor/cloud:v1.2.3
-
-   # 不推荐：使用 main tag（难以回滚）
-   image: magictensor/cloud:main
+   # 推荐：通过 IMAGE_TAG 统一控制版本
+   IMAGE_TAG=1.2.3
+   image: crpi-yzbqob8e5cxd8omc.cn-hangzhou.personal.cr.aliyuncs.com/magictensor/cloud:${IMAGE_TAG}
    ```
 
 3. **记录部署历史**
    ```bash
    # 创建部署日志
-   echo "$(date): Deployed version $(docker images | grep cloud:main)" >> deployment.log
+   echo "$(date): Deployed version ${IMAGE_TAG:-latest}" >> deployment.log
    ```
 
 ---

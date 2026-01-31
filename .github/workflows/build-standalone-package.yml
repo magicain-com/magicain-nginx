@@ -40,6 +40,12 @@ jobs:
           PRIVATE_DOCKER_REGISTRY_PASSWORD=${{ secrets.PRIVATE_DOCKER_REGISTRY_PASSWORD }}
           IMAGE_TAG=${{ inputs.version }}
           EOF
+
+      - name: Prepare standalone env
+        run: |
+          cat > standalone/.env << EOF
+          IMAGE_TAG=${{ inputs.version }}
+          EOF
       
       - name: Build standalone package
         run: |
