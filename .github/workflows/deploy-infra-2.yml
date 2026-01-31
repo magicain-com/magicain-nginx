@@ -107,5 +107,8 @@ jobs:
             export PUBLIC_DOCKER_REGISTRY_URL="${{ secrets.PUBLIC_DOCKER_REGISTRY_URL }}"
             export PUBLIC_DOCKER_REGISTRY_USERNAME="${{ secrets.PUBLIC_DOCKER_REGISTRY_USERNAME }}"
             export PUBLIC_DOCKER_REGISTRY_PASSWORD="${{ secrets.PUBLIC_DOCKER_REGISTRY_PASSWORD }}"
+            export PRIVATE_DOCKER_REGISTRY_URL="${{ secrets.PRIVATE_DOCKER_REGISTRY_URL }}"
+            export PRIVATE_DOCKER_REGISTRY_USERNAME="${{ secrets.PRIVATE_DOCKER_REGISTRY_USERNAME }}"
+            export PRIVATE_DOCKER_REGISTRY_PASSWORD="${{ secrets.PRIVATE_DOCKER_REGISTRY_PASSWORD }}" 
             bash scripts/start-prod.sh docker-compose.infra-2.yml
 
