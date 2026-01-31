@@ -22,6 +22,22 @@ services:
     networks:
       - magicain-infra-1
 
+  # ClickHouse (infra-1 server)
+  clickhouse:
+    image: docker.xuanyuan.run/clickhouse/clickhouse-server:24
+    restart: unless-stopped
+    environment:
+      CLICKHOUSE_DB: ${CLICKHOUSE_DB:-default}
+      CLICKHOUSE_USER: ${CLICKHOUSE_USER:-default}
+      CLICKHOUSE_PASSWORD: ${CLICKHOUSE_PASSWORD:-}
+    ports:
+      - "8123:8123"   # HTTP
+      - "9000:9000"   # Native
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    networks:
+      - magicain-infra-1
+
 volumes:
   postgres_data:
     driver: local
@@ -29,6 +45,12 @@ volumes:
       type: none
       o: bind
       device: /data/postgres
+  clickhouse_data:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: /data/clickhouse
 
 networks:
   magicain-infra-1:
