@@ -1,4 +1,5 @@
 #!/bin/bash
+set -euo pipefail
 
 # Production Environment Startup Script
 # Handles Docker login and starts production services
