@@ -56,6 +56,26 @@ esac
 PULL_LABEL="$TARGET_ARCH"
 ZIP_ARCH_SUFFIX="$TARGET_ARCH"
 
+# Fetch remote image metadata (digest + common version labels)
+get_image_metadata() {
+  local image="$1"
+  local creds_opt="$2"
+  local arch="$3"
+
+  skopeo inspect --override-arch "$arch" --override-os linux \
+    $creds_opt --format '{{.Digest}}\t{{.Created}}\t{{index .Labels "org.opencontainers.image.version"}}\t{{index .Labels "org.opencontainers.image.revision"}}\t{{index .Labels "org.label-schema.version"}}' \
+    "docker://$image" 2>/dev/null || true
+}
+
+normalize_metadata_value() {
+  local value="$1"
+  if [ "$value" = "<no value>" ] || [ "$value" = "null" ]; then
+    echo ""
+  else
+    echo "$value"
+  fi
+}
+
 # Function to generate filename from image name
 generate_filename() {
   local IMAGE=$1
@@ -154,6 +174,14 @@ echo ""
 # Create output directory if it doesn't exist
 mkdir -p "$OUTPUT_DIR"
 
+# Manifest file for remote image metadata
+MANIFEST_FILE="$OUTPUT_DIR/manifest.txt"
+{
+  echo "# Magicain standalone image manifest"
+  echo "# Generated: $(date -u +"%Y-%m-%dT%H:%M:%SZ")"
+  echo -e "image\tarch\tdigest\tcreated\toci_version\toci_revision\tlabel_schema_version"
+} > "$MANIFEST_FILE"
+
 # 清理旧的 tar 文件（skopeo 不支持覆盖现有文件）
 if ls "$OUTPUT_DIR"/*.tar 1> /dev/null 2>&1; then
     echo "🧹 清理旧的镜像包..."
@@ -190,21 +218,57 @@ for IMAGE in "${IMAGES[@]}"; do
   OUTPUT_FILE="$OUTPUT_DIR/$(generate_filename "$IMAGE")"
   REGISTRY="${IMAGE%%/*}"
   CREDS_OPT=""
+  INSPECT_CREDS_OPT=""
 
   # 针对不同 registry 选择对应凭据；否则依赖 ~/.docker/config.json
   if [ -n "$PRIVATE_REGISTRY_HOST" ] && [ "$REGISTRY" = "$PRIVATE_REGISTRY_HOST" ]; then
     if [ -n "$PRIVATE_DOCKER_REGISTRY_USERNAME" ] && [ -n "$PRIVATE_DOCKER_REGISTRY_PASSWORD" ]; then
       CREDS_OPT="--src-creds ${PRIVATE_DOCKER_REGISTRY_USERNAME}:${PRIVATE_DOCKER_REGISTRY_PASSWORD}"
+      INSPECT_CREDS_OPT="--creds ${PRIVATE_DOCKER_REGISTRY_USERNAME}:${PRIVATE_DOCKER_REGISTRY_PASSWORD}"
       echo "   → Using private registry creds for $REGISTRY"
     fi
   elif [ -n "$PUBLIC_REGISTRY_HOST" ] && [ "$REGISTRY" = "$PUBLIC_REGISTRY_HOST" ]; then
     if [ -n "$PUBLIC_DOCKER_REGISTRY_USERNAME" ] && [ -n "$PUBLIC_DOCKER_REGISTRY_PASSWORD" ]; then
       CREDS_OPT="--src-creds ${PUBLIC_DOCKER_REGISTRY_USERNAME}:${PUBLIC_DOCKER_REGISTRY_PASSWORD}"
+      INSPECT_CREDS_OPT="--creds ${PUBLIC_DOCKER_REGISTRY_USERNAME}:${PUBLIC_DOCKER_REGISTRY_PASSWORD}"
       echo "   → Using public registry creds for $REGISTRY"
     fi
   else
     echo "   → No inline creds for $REGISTRY, will rely on ~/.docker/config.json"
   fi
+
+  echo "   🔎 Inspecting remote image metadata..."
+  INSPECT_OUTPUT=$(get_image_metadata "$IMAGE" "$INSPECT_CREDS_OPT" "$TARGET_ARCH")
+  if [ -z "$INSPECT_OUTPUT" ]; then
+    echo "   ⚠️  无法读取镜像元数据（可能权限不足或镜像不存在）"
+  else
+    IFS=$'\t' read -r DIGEST CREATED OCI_VERSION OCI_REVISION SCHEMA_VERSION <<< "$INSPECT_OUTPUT"
+    DIGEST=$(normalize_metadata_value "$DIGEST")
+    CREATED=$(normalize_metadata_value "$CREATED")
+    OCI_VERSION=$(normalize_metadata_value "$OCI_VERSION")
+    OCI_REVISION=$(normalize_metadata_value "$OCI_REVISION")
+    SCHEMA_VERSION=$(normalize_metadata_value "$SCHEMA_VERSION")
+
+    echo "   → Remote digest: ${DIGEST:-unknown}"
+    if [ -n "$OCI_VERSION" ]; then
+      echo "   → OCI version label: $OCI_VERSION"
+    elif [ -n "$SCHEMA_VERSION" ]; then
+      echo "   → Label version: $SCHEMA_VERSION"
+    else
+      echo "   → Version label: (not set)"
+    fi
+    if [ -n "$OCI_REVISION" ]; then
+      echo "   → OCI revision: $OCI_REVISION"
+    fi
+    if [ -n "$CREATED" ]; then
+      echo "   → Created: $CREATED"
+    fi
+
+    printf "%s\t%s\t%s\t%s\t%s\t%s\t%s\n" \
+      "$IMAGE" "$TARGET_ARCH" "$DIGEST" "$CREATED" "$OCI_VERSION" "$OCI_REVISION" "$SCHEMA_VERSION" \
+      >> "$MANIFEST_FILE"
+  fi
+  echo ""
   
   # 使用 skopeo copy 直接从 registry 下载指定架构的镜像到本地 tar 文件
   # --override-arch 指定架构
@@ -247,6 +311,7 @@ for IMAGE in "${IMAGES[@]}"; do
     echo "  - $FILENAME ($FILE_SIZE)"
   fi
 done
+echo "🧾 Manifest: $MANIFEST_FILE"
 
 # Calculate total size
 TOTAL_SIZE=$(du -sh "$OUTPUT_DIR" | awk '{print $1}')
