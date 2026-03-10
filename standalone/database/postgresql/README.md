@@ -2,11 +2,10 @@
 
 ## 目录定位
 
-`standalone/database/postgresql` 是私有化部署场景下 PostgreSQL 全量初始化脚本的最终存放位置。
-
+`standalone/database/postgresql` 是私有化部署场景中 PostgreSQL 全量初始化脚本的最终存放位置。
 这里的脚本用于：
 
-- 私有化/离线交付包中的数据库初始化
+- 私有化离线交付包中的数据库初始化
 - 客户生产环境首次安装时的标准初始化
 - 交付视角下的最终数据库脚本归档
 
@@ -52,14 +51,14 @@
 
 本次外部身份映射改造已在开发侧补充 PostgreSQL 增量脚本：
 
-- `cloud/sql/patch/20260309-external-identity-mapping-pg.sql`
+- `cloud/sql/patch/20260309-source-identity-mapping-pg.sql`
 
 当前约定如下：
 
-- 对于已存在的生产库/已有系统，需要手动执行上述增量 patch
-- 对于 `standalone` 私有化全量初始化脚本，本次改造内容尚未并入本目录的全量 SQL
+- 对于已存在的生产库/已有系统，仍需要手动执行上述增量 patch
+- 对于 `standalone` 私有化全量初始化脚本，本次改造内容已合并到 `3-init-update.sql`
 
-待办：
+当前状态：
 
-- 在外部身份映射功能验证通过后，将 `20260309-external-identity-mapping-pg.sql` 的有效内容整合进本目录的全量初始化脚本
-
+- `20260309-source-identity-mapping-pg.sql` 继续作为存量环境升级脚本
+- `3-init-update.sql` 承接新装环境的全量初始化补充
