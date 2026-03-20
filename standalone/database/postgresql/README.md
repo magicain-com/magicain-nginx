@@ -62,3 +62,17 @@
 
 - `20260309-source-identity-mapping-pg.sql` 继续作为存量环境升级脚本
 - `3-init-update.sql` 承接新装环境的全量初始化补充
+
+## 当前 LLM 计费改造说明
+
+本次 LLM 计费相关 PostgreSQL 补丁来源于开发侧：
+
+- `cloud/sql/patch/llm-usage-event.sql`
+- `cloud/sql/patch/llm-price-book.sql`
+- `cloud/sql/patch/llm-billing-cycle.sql`
+
+当前约定如下：
+
+- 对于 `standalone` 私有化全量初始化脚本，上述内容已合并到 `3-init-update.sql`
+- 对于已存在的私有化 PostgreSQL 环境，升级包统一执行 `standalone/upgrade/general/20260320/sql/20260320-llm-billing-pg.sql`
+- 本次未单独提供“星网”目录版本，统一使用上述通用 PG 升级脚本
