@@ -15,6 +15,16 @@ This project provides a complete development and production environment includin
 - Langfuse for AI agent monitoring and tracing
 - Prometheus and Grafana for system monitoring
 
+## Top-Level Documentation
+
+This repo also acts as the top-level system-documentation and orchestration repo for the Magicain multi-repo platform.
+
+- System guide: [AGENTS.md](AGENTS.md)
+- Architecture map: [ARCHITECTURE.md](ARCHITECTURE.md)
+- Repo responsibilities: [docs/references/repo-map.md](docs/references/repo-map.md)
+- PR readiness: [docs/process/pull-request-readiness.md](docs/process/pull-request-readiness.md)
+- System docs: [docs/systems/](docs/systems/)
+
 ## Quick Start
 
 ### Prerequisites
