@@ -177,6 +177,7 @@ docker compose up -d
 - **首次安装**：数据目录为空时，会自动执行 `database/postgresql/*.sql` 初始化脚本。
 - **后续更新**：数据目录已存在时，**初始化脚本不会重新执行**，所有数据保持不变。
 - **Schema 升级**：如果需要升级数据库结构，必须**手动执行增量 SQL 脚本**。
+- **交付目录说明**：`database/postgresql` 是 PostgreSQL 全量初始化脚本的最终交付位置，说明文档见 [database/postgresql/README.md](./database/postgresql/README.md)。
 
 ### 4. Docker 镜像更新机制（`IMAGE_TAG`）
 
