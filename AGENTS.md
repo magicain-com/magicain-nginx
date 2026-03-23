@@ -4,11 +4,11 @@
 
 ## 各repo介绍
 
+- `magicain-harness`: Harness，顶层repo，包括文档，约定，DevOps脚本和配置。用于串联各repo
 - `magicain-cloud`: 后端，Java Spring Boot Spring Cloud 技术栈，通过子Module区分各模块
 - `magicain-agent-ui`: Agent管理后台前端，Agent产品的管理端，React技术栈
 - `magicain-admin-ui`: Admin管理后台，SaaS产品的管理端，Vue技术栈
 - `magicain-ui`: Agent用户前端，Agent产品的用户端，React技术栈
-- `magicain-nginx`: Harness，顶层repo，包括文档，约定，DevOps脚本和配置。用于串联各repo。
 
 ## 开发规范
 
