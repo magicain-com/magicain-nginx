@@ -40,3 +40,6 @@ Thumbs.db
 # Backup files
 *.bak
 *.backup
+
+# Local smoke env
+.env.smoke
