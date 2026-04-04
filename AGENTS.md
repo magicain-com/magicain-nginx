@@ -14,7 +14,7 @@
 
 - Feature开发活Bug fix完毕后要进行至少后端的集成测试和前端的冒烟测试
 - 后端集成测试使用bash，脚本保留在后端repo
-- 前端冒烟测试使用npm
+- 冒烟测试使用playwright cli
 - Commit message需要根据开发内容进行总结，格式上采用feat:，bugfix:，chore: 等这些前缀表示不同类型的提交
 - 提交PR时要根据这次改动的过程总结决策过程和这次开发的结果并放到PR的message中
 
@@ -23,6 +23,8 @@
 - 可以在本地非沙盒环境启动前后端进行测试，包括集成测试，冒烟测试，UI测试
 - 中间件依赖云端，包括DB，Redis，ES
 - 通过SaaS的租户隔离构建测试环境，方便留存测试数据
+- 本地测试是通过 [scripts/start-local.sh](scripts/start-local.sh) 用这个Nginx代理各个服务。统一在 http://localshot:7070/admin/ 登录，用户端 http://localshot:7070/c/?appId=x 来访问某个 appId 的应用
+- 本地测试登录租户为"胖橘源码"，用户名是"admin"，密码是"admin123"
 
 ## 参考文档
 

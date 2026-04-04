@@ -84,6 +84,34 @@ generate_filename() {
   echo "${FILENAME}.tar"
 }
 
+validate_offline_assets() {
+  local pointer_file=""
+
+  if [ ! -d "$STANDALONE_DIR/docker/infra" ]; then
+    echo -e "${RED}❌ 未找到离线 RPM 目录: $STANDALONE_DIR/docker/infra${NC}"
+    exit 1
+  fi
+
+  while IFS= read -r -d '' rpm_file; do
+    if head -n 1 "$rpm_file" 2>/dev/null | grep -q '^version https://git-lfs.github.com/spec/v1$'; then
+      pointer_file="$rpm_file"
+      break
+    fi
+  done < <(find "$STANDALONE_DIR/docker/infra" -maxdepth 1 -type f -name '*.rpm' -print0)
+
+  if [ -n "$pointer_file" ]; then
+    echo -e "${RED}❌ 检测到 Git LFS 指针文件，不能继续打包:${NC}"
+    echo "   $pointer_file"
+    echo ""
+    echo "请先拉取真实二进制文件："
+    echo "   git lfs install"
+    echo "   git lfs pull"
+    exit 1
+  fi
+
+  echo -e "${GREEN}✅ 离线 RPM 资源校验通过${NC}"
+}
+
 echo -e "${BLUE}================================${NC}"
 echo -e "${BLUE}Standalone Deployment Package Builder${NC}"
 echo -e "${BLUE}================================${NC}"
@@ -92,6 +120,8 @@ echo ""
 # 步骤 1: 加载环境变量并检查工具
 echo -e "${YELLOW}[1/4] 加载配置...${NC}"
 echo ""
+
+validate_offline_assets
 
 # 检查 skopeo 是否安装
 if ! command -v skopeo &> /dev/null; then

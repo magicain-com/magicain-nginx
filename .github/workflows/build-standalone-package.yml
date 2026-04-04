@@ -22,6 +22,16 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Ensure Git LFS assets are present
+        run: |
+          git lfs pull
+          if grep -RIl --include='*.rpm' '^version https://git-lfs.github.com/spec/v1$' standalone/docker/infra; then
+            echo "Standalone RPM assets are still Git LFS pointer files"
+            exit 1
+          fi
       
       - name: Install skopeo
         run: |
@@ -59,4 +69,3 @@ jobs:
           path: |
             standalone/
           retention-days: 7
-
