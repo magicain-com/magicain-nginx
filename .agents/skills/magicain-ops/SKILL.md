@@ -1,6 +1,6 @@
 ---
 name: magicain-ops
-description: Magicain 生产运维工作流。用于检查或续期 magicain.com SSL/TLS 证书、通过阿里云 CAS 和 DNS 完成验证、更新 GitHub Actions 的 prod 环境证书密钥、触发 app-frontend 部署，以及验证生产 Nginx 和实际证书；也用于后续加入 Magicain 发布、备份、告警和服务器巡检等仓库共享运维流程。涉及“证书快过期”“更新证书”“部署证书”“Magicain 运维”“生产证书”时使用。
+description: Magicain 生产运维工作流。用于检查或续期 magicain.com SSL/TLS 证书、通过阿里云 CAS 和 DNS 完成验证、更新 GitHub Actions 的 prod 环境证书密钥、触发 app-frontend 部署、验证生产 Nginx 和实际证书，并根据新证书到期时间安排下一次续期任务；也用于后续加入 Magicain 发布、备份、告警和服务器巡检等仓库共享运维流程。涉及“证书快过期”“更新证书”“部署证书”“安排证书续期”“Magicain 运维”“生产证书”时使用。
 ---
 
 # Magicain 运维
@@ -21,7 +21,8 @@ description: Magicain 生产运维工作流。用于检查或续期 magicain.com
 4. 更新 GitHub `prod` 环境密钥和触发生产部署属于外部变更；确认用户已明确要求执行。若用户只要求检查或诊断，不执行写操作。
 5. 每个阶段都用权威信号验收：公网 DNS 查询、阿里云签发状态、GitHub Actions 结论、Nginx 配置检查以及服务器 443 端口实际证书。仅看到“命令成功”不算完成。
 6. 公网入口若受 ICP 备案拦截，区分“证书已部署”和“公网可访问”；使用生产服务器本机 443 端口完成证书验收，并单独报告备案问题。
+7. 每次成功部署后，从生产服务器实际证书读取 `notAfter`，将名为“Magicain 证书续期”的下一次一次性任务安排在到期前 10 天。优先更新已有同名任务，不创建重复任务；不得使用固定季度循环代替实际到期时间。
 
 ## 交付结果
 
-报告证书 ID、域名/SAN、有效期、GitHub Actions 运行链接、Nginx 验证结果、服务器实际证书指纹，以及仍需处理的独立风险。不得在交付中包含敏感值。
+报告证书 ID、域名/SAN、有效期、GitHub Actions 运行链接、Nginx 验证结果、服务器实际证书指纹、下一次定时任务时间，以及仍需处理的独立风险。不得在交付中包含敏感值。
