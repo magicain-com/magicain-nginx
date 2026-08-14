@@ -15,7 +15,7 @@ description: Magicain 生产运维工作流。用于检查或续期 magicain.com
 
 ## 通用守则
 
-1. 优先使用阿里云 CLI、GitHub CLI 和 SSH；只有登录态、跨账号 DNS 或控制台专属操作必须使用网页时才使用用户指定的浏览器。
+1. 阿里云 CAS 与 `magicain.com` 云解析 DNS 已在同一账号，DV 证书默认使用自动 DNS 验证。优先使用阿里云 CLI、GitHub CLI 和 SSH；只有权限异常、再次跨账号或控制台专属操作必须使用网页时才使用用户指定的浏览器。
 2. 在任何输出、日志或命令参数中都不得展示证书私钥、GitHub Token、AccessKey Secret 或 SSH 私钥。将敏感文件写入权限为 `0700/0600` 的临时目录，完成后删除。
 3. 修改 DNS 前精确核对域名、主机记录、记录类型、旧值和新值。证书续期只修改 `_dnsauth` TXT，不改动 A、CNAME、MX 等其他记录。
 4. 更新 GitHub `prod` 环境密钥和触发生产部署属于外部变更；确认用户已明确要求执行。若用户只要求检查或诊断，不执行写操作。

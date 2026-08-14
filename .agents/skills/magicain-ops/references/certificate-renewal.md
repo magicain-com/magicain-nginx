@@ -1,5 +1,18 @@
 # Magicain 生产证书续期
 
+## 目录
+
+- [固定上下文](#固定上下文)
+- [阶段 0：预检](#阶段-0预检)
+- [阶段 1：准备并申请证书](#阶段-1准备并申请证书)
+- [阶段 2：自动 DNS 验证](#阶段-2自动-dns-验证)
+- [阶段 3：等待签发并验证证书](#阶段-3等待签发并验证证书)
+- [阶段 4：安全下载和本地校验](#阶段-4安全下载和本地校验)
+- [阶段 5：更新 GitHub prod 密钥](#阶段-5更新-github-prod-密钥)
+- [阶段 6：触发并跟踪部署](#阶段-6触发并跟踪部署)
+- [阶段 7：生产服务器验收](#阶段-7生产服务器验收)
+- [阶段 8：清理和交付](#阶段-8清理和交付)
+
 ## 固定上下文
 
 | 项目 | 值 |
@@ -7,6 +20,7 @@
 | 主域名 | `magicain.com` |
 | 期望 SAN | `magicain.com`、`www.magicain.com` |
 | 证书服务 | 阿里云数字证书管理服务 CAS，DigiCert DV |
+| DNS 托管 | 阿里云云解析 DNS，与 CAS 在同一阿里云账号；默认自动 DNS 验证 |
 | 仓库 | `magicain-com/magicain-harness` |
 | GitHub 环境 | `prod` |
 | GitHub 密钥 | `MAGICAIN_CERT_KEY`、`MAGICAIN_CERT_PEM` |
@@ -32,12 +46,15 @@
 
    ```bash
    aliyun sts GetCallerIdentity
+   aliyun alidns DescribeDomainInfo --DomainName magicain.com
+   aliyun alidns DescribeDomainRecords --DomainName magicain.com --SearchMode COMBINATION --RRKeyWord _dnsauth --TypeKeyWord TXT --PageNumber 1 --PageSize 100
    gh auth status
    gh repo view magicain-com/magicain-harness --json nameWithOwner,defaultBranchRef
    ```
 
 5. 如果环境变量 `GITHUB_TOKEN` 覆盖了钥匙串中的有效登录并导致失败，使用 `env -u GITHUB_TOKEN gh ...` 重试。不要打印环境变量内容。
-6. 使用 `aliyun configure list` 选择有 CAS 权限的配置。团队机器可使用 `magicain-prod`，但必须以 `GetCallerIdentity` 的实际结果为准，不假设账号身份。
+6. 使用 `aliyun configure list` 选择同时有 CAS 和云解析 DNS 权限的配置。团队机器可使用 `magicain-prod`，但必须以 `GetCallerIdentity`、`DescribeDomainInfo` 和实际返回结果为准，不假设账号身份。
+7. 保存申请前 `_dnsauth` TXT 的记录 ID、值、TTL 和状态。若存在多个记录或明显属于第三方的验证值，不要覆盖或删除；先报告冲突。
 
 ## 阶段 1：准备并申请证书
 
@@ -68,11 +85,13 @@ aliyun cas UpdateInstance \
 aliyun cas ApplyCertificate --InstanceId <INSTANCE_ID>
 ```
 
+`magicain.com` 的 CAS 与云解析 DNS 已在同一阿里云账号。提交 DV 证书申请后，阿里云应自动选择自动 DNS 验证并添加所需解析记录。不要在 `ApplyCertificate` 前预先猜测或写入验证值。
+
 若没有可复用实例，先通过阿里云控制台获取个人测试证书额度，或在联系人信息已获授权时使用 `CreateCertificateRequest`。执行前用 `aliyun cas CreateCertificateRequest help` 核对当前参数；不要把个人信息硬编码进仓库。
 
 不要为当前 Magicain 入口选择 HTTP/FILE 验证。公网可能被阿里云 ICP 备案页面拦截，导致 CA 无法读取验证文件；使用 DNS 验证。
 
-## 阶段 2：完成 DNS 验证
+## 阶段 2：自动 DNS 验证
 
 查询实例详情并提取本次申请的验证记录：
 
@@ -80,26 +99,53 @@ aliyun cas ApplyCertificate --InstanceId <INSTANCE_ID>
 aliyun cas GetInstanceDetail --InstanceId <INSTANCE_ID>
 ```
 
-以返回的 `DomainValidationList` 为唯一真源，读取：
+提交申请后先等待 30–120 秒，并同时检查 CAS 状态和云解析记录：
+
+```bash
+aliyun cas GetInstanceDetail --InstanceId <INSTANCE_ID>
+aliyun alidns DescribeDomainRecords --DomainName magicain.com --SearchMode COMBINATION --RRKeyWord _dnsauth --TypeKeyWord TXT --PageNumber 1 --PageSize 100
+```
+
+同账号自动 DNS 验证是默认路径。阿里云会在云解析 DNS 中自动添加验证记录；如果证书很快进入 `issued`，无需人工改 DNS。不要因为仍看到旧 `_dnsauth` 值就立即覆盖，先确认 CAS 是否已创建另一条记录或已经完成验证。
+
+如果证书仍为 `pending`，以 `GetInstanceDetail` 返回的 `DomainValidationList` 为唯一真源，读取：
 
 - `ValidationKey` 或 `CnameKey`：通常为 `_dnsauth`
 - `ValidationType`：当前流程使用 `TXT`
 - `ValidationValue`：每次申请都会变化，绝不能复用旧值
 
-如果 CAS 账号同时拥有 DNS 权限，优先使用阿里云 DNS CLI 精确更新现有 `_dnsauth` TXT。若 DNS 属于另一个阿里云账号，使用用户已登录的 Chrome 操作云解析 DNS 控制台：
-
-1. 打开 `magicain.com` 的解析设置。
-2. 定位唯一的 `_dnsauth` TXT 记录。
-3. 只把记录值改成本次 `ValidationValue`；保留主机记录、类型、线路、TTL 和启用状态。
-4. 在变更确认页再次核对旧值、新值和域名后提交。
-
-用公网 DNS 验收：
+先用公网 DNS 验收：
 
 ```bash
 dig +short TXT _dnsauth.magicain.com
 ```
 
-返回值必须与本次申请的 `ValidationValue` 完全一致。
+返回值包含本次 `ValidationValue` 即表示验证记录已公开生效。
+
+### 自动验证失败时的 CLI 备用流程
+
+只有等待数分钟后 CAS 仍为 `pending`，且公网 DNS 不包含本次验证值时才人工补记录。先精确查询现有记录，绝不凭旧记录 ID 操作：
+
+```bash
+aliyun alidns DescribeDomainRecords --DomainName magicain.com --SearchMode COMBINATION --RRKeyWord _dnsauth --TypeKeyWord TXT --PageNumber 1 --PageSize 100
+```
+
+- 已存在完全相同的 `ValidationValue`：不写入，继续等待 DNS 缓存和 CA 检测。
+- 没有相同值：优先新增独立记录，避免覆盖仍可能被其他证书申请使用的值：
+
+  ```bash
+  aliyun alidns AddDomainRecord --DomainName magicain.com --RR _dnsauth --Type TXT --Value <VALIDATION_VALUE> --Line default --TTL 600
+  ```
+
+- 只有确认某条旧记录专属于已完成或已撤回的旧证书申请，并且用户已授权替换时，才按实时查询出的记录 ID 更新：
+
+  ```bash
+  aliyun alidns UpdateDomainRecord --RecordId <RECORD_ID> --RR _dnsauth --Type TXT --Value <VALIDATION_VALUE> --Line default --TTL 600
+  ```
+
+写入后再次执行 `DescribeDomainRecords` 和 `dig +short TXT _dnsauth.magicain.com` 验收。
+
+只有当前 CLI 身份失去云解析 DNS 权限、DNS 再次迁移到其他账号，或阿里云控制台要求人工确认时，才使用用户已登录的 Chrome。网页操作仍只允许处理 `_dnsauth` TXT，不改动其他记录。
 
 ## 阶段 3：等待签发并验证证书
 
@@ -197,6 +243,8 @@ ssh -o BatchMode=yes prod-app-frontend \
 rm -f "$CERT_TMP_DIR/detail.json" "$CERT_TMP_DIR/cert.pem" "$CERT_TMP_DIR/key.pem"
 rmdir "$CERT_TMP_DIR"
 ```
+
+证书签发后可清理仅服务于本次申请的 DNS 验证记录，但这不是部署成功的必要条件。删除前必须重新查询记录 ID，确认没有其他待签发证书依赖该值，并取得用户明确授权；不确定时保留记录并在交付中说明。
 
 交付内容包括：
 
